@@ -1,0 +1,13 @@
+use jni_sys::*;
+
+foreign_class!(class Trial {
+    self_type Trial;
+    constructor Trial::new() -> Trial;
+    fn Trial::hello(&self) -> String;
+
+    foreign_code r#"
+    static {
+        System.loadLibrary("trial");
+    }
+"#;
+});

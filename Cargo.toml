@@ -1,0 +1,17 @@
+[package]
+name = "trial"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+android_logger = "0.10"
+log = "0.4"
+log-panics = "2.0"
+jni-sys = "0.3"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[build-dependencies]
+flapigen = "0.6.0-pre7"
+env_logger = "0.8"

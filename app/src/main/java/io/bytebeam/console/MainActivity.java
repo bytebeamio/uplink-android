@@ -1,13 +1,11 @@
 package io.bytebeam.console;
 
 import android.os.Bundle;
-
-import com.google.android.material.snackbar.Snackbar;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.View;
 
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -18,19 +16,16 @@ import io.bytebeam.console.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import io.bytebeam.uplink.Uplink;
+import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    private Uplink uplink;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        uplink = new Uplink("{\"device_id\": \"123\", \"project_id\": \"demo\", \"broker\": \"example.com\", \"port\": 1883,}");
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -44,10 +39,15 @@ public class MainActivity extends AppCompatActivity {
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                initUplink(view);
             }
         });
+    }
+
+    public void initUplink(View view) {
+        String hello = new Trial().hello();
+
+        Snackbar.make(view, hello, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
