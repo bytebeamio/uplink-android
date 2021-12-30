@@ -70,14 +70,14 @@ archTriplets.each { arch, target ->
         }
     }
 
-    // Build with cargo
-    tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
+    // Build with rust-embedded/cross
+    tasks.create(name: "cross-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
         workingDir rustBasePath
-        commandLine 'cargo', 'build', "--target=${target}", '--release'
+        commandLine 'cross', 'build', "--target=${target}", '--release'
     }
 
     // Sync shared native dependencies
-    tasks.create(name: "sync-rust-deps-${arch}", type: Sync, dependsOn: "cargo-build-${arch}") {
+    tasks.create(name: "sync-rust-deps-${arch}", type: Sync, dependsOn: "cross-build-${arch}") {
         from "${rustBasePath}/src/libs/${arch}"
         include "*.so"
         into "src/main/jniLibs/${arch}"

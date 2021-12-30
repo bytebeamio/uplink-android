@@ -12,16 +12,26 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import io.bytebeam.console.databinding.ActivityMainBinding;
+import io.bytebeam.console.Uplink;
 
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private String auth_config;
+    private Uplink uplink;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +55,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void initUplink(View view) {
-        String hello = new Trial().hello();
+        try {
+//            File file = ;
+//            auth_config = getFileContents(file);
+            if (auth_config.isEmpty()) {
+                throw new Exception("Empty auth config");
+            }
+            uplink = new Uplink(auth_config);
+            Snackbar.make(view, "Connected to uplink: " + auth_config, Snackbar.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Snackbar.make(view, "Couldn't connect: " + e, Snackbar.LENGTH_LONG).show();
+        }
+    }
 
-        Snackbar.make(view, hello, Snackbar.LENGTH_LONG).show();
+    public static String getFileContents(final File file) throws IOException {
+        final InputStream inputStream = new FileInputStream(file);
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        boolean done = false;
+
+        while (!done) {
+            final String line = reader.readLine();
+            done = (line == null);
+
+            if (line != null) {
+                stringBuilder.append(line);
+            }
+        }
+
+        reader.close();
+        inputStream.close();
+
+        return stringBuilder.toString();
     }
 
     @Override
