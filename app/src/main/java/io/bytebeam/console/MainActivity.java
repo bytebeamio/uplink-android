@@ -1,8 +1,11 @@
 package io.bytebeam.console;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.os.Environment;
 import android.view.View;
 
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
@@ -30,7 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    private String auth_config;
+    private Uri filePath;
+    private String authConfig;
     private Uplink uplink;
 
     @Override
@@ -56,19 +60,41 @@ public class MainActivity extends AppCompatActivity {
 
     public void initUplink(View view) {
         try {
-//            File file = ;
-//            auth_config = getFileContents(file);
-            if (auth_config.isEmpty()) {
+            selectConfig();
+            if (authConfig.isEmpty()) {
                 throw new Exception("Empty auth config");
             }
-            uplink = new Uplink(auth_config);
-            Snackbar.make(view, "Connected to uplink: " + auth_config, Snackbar.LENGTH_LONG).show();
+            uplink = new Uplink(authConfig);
+            Snackbar.make(view, "Connected to uplink: " + authConfig, Snackbar.LENGTH_LONG).show();
         } catch (Exception e) {
             Snackbar.make(view, "Couldn't connect: " + e, Snackbar.LENGTH_LONG).show();
         }
     }
 
-    public static String getFileContents(final File file) throws IOException {
+    static final int REQUEST_JSON_GET = 1;
+
+    public void selectConfig() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("application/json");
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_JSON_GET);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_JSON_GET && resultCode == RESULT_OK) {
+            filePath = data.getData();
+            File file = new File(filePath.getPath());
+            try {
+                authConfig = getConfig(file);
+            } catch (Exception e) {
+                Snackbar.make(getCurrentFocus(), "Couldn't load config: " + e, Snackbar.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    public static String getConfig(File file) throws IOException {
         final InputStream inputStream = new FileInputStream(file);
         final BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
