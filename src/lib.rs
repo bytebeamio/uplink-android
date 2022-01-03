@@ -85,6 +85,9 @@ impl Uplink {
                 .extract()
                 .map_err(|e| e.to_string())?,
         );
+
+        info!("Config: {:#?}", config);
+
         let (bridge_rx, tx, action_stream) =
             spawn_uplink(config.clone()).map_err(|e| e.to_string())?;
 

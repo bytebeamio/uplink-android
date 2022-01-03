@@ -13,11 +13,11 @@ fn main() {
             .join("java")
             .join("io")
             .join("bytebeam")
-            .join("console"),
-        "io.bytebeam.console".into(),
+            .join("uplink"),
+        "io.bytebeam.uplink".into(),
     )))
     .rustfmt_bindings(true);
 
-    flap_gen.expand("java bindings", &in_src, &out_src);
+    flap_gen.expand("android bindings", &in_src, &out_src);
     println!("cargo:rerun-if-changed={}", in_src.display());
 }
