@@ -33,13 +33,12 @@ const DEFAULT_CONFIG: &'static str = r#"
     # triggered from cloud.
     actions = ["tunshell"]
 
-    [persistence]
-    path = "/tmp/uplink"
-    max_file_size = 104857600 # 100MB
-    max_file_count = 3
-
     [streams.metrics]
     topic = "/tenants/{tenant_id}/devices/{device_id}/events/metrics/jsonarray"
+    buf_size = 10
+
+    [streams.current_time]
+    topic = "/tenants/{tenant_id}/devices/{device_id}/events/current_time/jsonarray"
     buf_size = 10
 
     # Action status stream from status messages from bridge
@@ -52,7 +51,7 @@ const DEFAULT_CONFIG: &'static str = r#"
     path = "/var/tmp/ota-file"
 
     [stats]
-    enabled = true
+    enabled = false
     process_names = ["uplink"]
     update_period = 5
 "#;
@@ -68,7 +67,7 @@ pub struct Uplink {
 }
 
 impl Uplink {
-    pub fn new(auth_config: String) -> Result<Uplink, String> {
+    pub fn new(config: String) -> Result<Uplink, String> {
         #[cfg(target_os = "android")]
         android_logger::init_once(
             android_logger::Config::default()
@@ -78,10 +77,12 @@ impl Uplink {
         log_panics::init();
         info!("init log system - done");
 
+        info!("Config path: {}", &config);
+
         let config: Arc<Config> = Arc::new(
             Figment::new()
                 .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
-                .merge(Data::<Json>::string(&auth_config))
+                .merge(Data::<Json>::string(&config))
                 .extract()
                 .map_err(|e| e.to_string())?,
         );

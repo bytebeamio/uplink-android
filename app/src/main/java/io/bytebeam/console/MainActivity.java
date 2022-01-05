@@ -1,10 +1,14 @@
 package io.bytebeam.console;
 
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Environment;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 
@@ -14,6 +18,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import io.bytebeam.console.databinding.ActivityMainBinding;
+import io.bytebeam.uplink.ActionCallback;
 import io.bytebeam.uplink.Uplink;
 
 import android.view.Menu;
@@ -23,23 +28,17 @@ import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity {
+import java.time.LocalDateTime;
+
+public class MainActivity extends AppCompatActivity implements ActionCallback {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-    private Uri filePath;
-    private String authConfig = "{\n" +
-            "  \"project_id\": \"test\",\n" +
-            "  \"broker\": \"demo.bytebeam.io\",\n" +
-            "  \"port\": 8883,\n" +
-            "  \"device_id\": \"1040\",\n" +
-            "  \"authentication\": {\n" +
-            "    \"ca_certificate\": \"-----BEGIN CERTIFICATE-----\\n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\\na0cIevjvYAtVysoXInV0kg==\\n-----END CERTIFICATE-----\\n\",\n" +
-            "    \"device_certificate\": \"-----BEGIN CERTIFICATE-----\\nMIIEajCCAlKgAwIBAgICB+MwDQYJKoZIhvcNAQELBQAwdzEOMAwGA1UEBhMFSW5k\\naWExETAPBgNVBAgTCEthcm5hdGFrMRIwEAYDVQQHEwlCYW5nYWxvcmUxFzAVBgNV\\nBAkTDlN1YmJpYWggR2FyZGVuMQ8wDQYDVQQREwY1NjAwMTExFDASBgNVBAoTC0J5\\ndGViZWFtLmlvMB4XDTIxMDkxMzA4MzQ0MVoXDTMxMDkxMzA4MzQ0MVowHjENMAsG\\nA1UEChMEdGVzdDENMAsGA1UEAxMEMTA0MDCCASIwDQYJKoZIhvcNAQEBBQADggEP\\nADCCAQoCggEBAM8WTP1+5KknjTHg3K2O5EDcyO1ayFrMp95x6Gh1mTVvTAz7lE9v\\nNYfOST3c76IB7AD34ufpwW3Cixb0SmrgtLFoJeTa/KZTIW3MdHdJegizFw3vca5Z\\nP+JYhpwo2Jt6exPRCM6YpIbOQHQAX98UFtEYxWQvsSUBg1k/fvbGqbjuPmkyRcpr\\nbvNMzJ1JzfjLySu1scsDHmSnceTX7TFLXvp8Zo7EV6LVuZnwKEksT89oq0pDMTS1\\nfdLEV/XCvgHPX1SPjXb0Wfiyx370d5UQqRSB4D1Rtv/kzS5KyG2ht87r9iybgE1f\\n+K6jdQxU6x+32tD5SRdqdAhe3mdR0pg8JGkCAwEAAaNZMFcwDgYDVR0PAQH/BAQD\\nAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMCMB8GA1UdIwQYMBaAFKl/MTbLrZ0gurne\\nOmAfBHO+LHz+MA8GA1UdEQQIMAaCBDEwNDAwDQYJKoZIhvcNAQELBQADggIBAGEc\\nE0LGURSs3E1TmqM2vUijNwxWz+T7LwriFdgBwx5to6yGafd80ZMxdN7chAnv0uTp\\nlvvWMIoW4JtdeYK1fi7H7dEFyu5LO2dEfbFcdF41BGQim3aXMhf5QGPQgCrjt3sM\\nbeKOj+Vb4935DNyYdaVS7fFzLvIVDLBRbX0jJyJY4wiREV2y+E3Rek5DlLWxMcDN\\nf1l7iWyi+EiSlP6CyPg+I1mzpGKX1ZPpiaVX9tYGCNntS8nxQFqVOdWJC92XnpjM\\n97gI24xCtzcL+oT2bpglXDVhoILcRiX5jEjAp3m5Tt5oRnTQIHLNA+a3pZFDNe9L\\nAnCkFDfYUBrgletCSfN37Ij+PjSaP6A0OqySf0JgthtYQSlHceSh7FifFlXtRcAF\\nUltOWhAorjxGLNsBs6+F+8Bpu7WsVnVB61O6QJMHJCslN0bQdWabh8GiL04bS1Uq\\nITpaZyQagTE1UnkjcQQOCij2/L+WLFteUHIs8KKVPb6N8NG23buKEvU7QHzw6Jl8\\nUjOOFO992mwcVSLrBhkDZC4BSI4JevkVciExWD+SZTyJMfLDi98DBB8qml0v+Rp9\\n3Ds7/28h8hN4qOm2cSJCZwtUAVUvJfifB3v5Fz/PFx9dIzZErjo9NgVMJ38jRFfm\\nq619b/c7CjdaBko69lohxUVd0PqPOnIU24n++RP1\\n-----END CERTIFICATE-----\\n\",\n" +
-            "    \"device_private_key\": \"-----BEGIN RSA PRIVATE KEY-----\\nMIIEpAIBAAKCAQEAzxZM/X7kqSeNMeDcrY7kQNzI7VrIWsyn3nHoaHWZNW9MDPuU\\nT281h85JPdzvogHsAPfi5+nBbcKLFvRKauC0sWgl5Nr8plMhbcx0d0l6CLMXDe9x\\nrlk/4liGnCjYm3p7E9EIzpikhs5AdABf3xQW0RjFZC+xJQGDWT9+9sapuO4+aTJF\\nymtu80zMnUnN+MvJK7WxywMeZKdx5NftMUte+nxmjsRXotW5mfAoSSxPz2irSkMx\\nNLV90sRX9cK+Ac9fVI+NdvRZ+LLHfvR3lRCpFIHgPVG2/+TNLkrIbaG3zuv2LJuA\\nTV/4rqN1DFTrH7fa0PlJF2p0CF7eZ1HSmDwkaQIDAQABAoIBAEVYmGuC5JtobTW4\\nsO1FnlXCGV6yOcl+IvCwgD0KtEVagcMPM/jtqqVRhOE8bNp5fkhMuiUi9+0DaoRD\\nRfBIUvndgGMEmfoweE9GWfHgHwduwVefSRgzNtta/aipXO+jsjdOln5oSyABTUAL\\nKA+RsJpQizkjZ1SXDx8Bzkhg+lC8jKqv5pMn65jrAR9aU8fulbowi6ruQ5GKEO9p\\nc9OynIbbXGW0eBcr3laYHC9o/dMAnJRrNMeKRetSc0Vqe+Q58KMn3mDJA8F7Jm/2\\nGVRs8WVDza/EDSD3Tumsm2DhQtHVCtSSa9qO8qa0NZ6YE4zZbJt/gUhVT/zCwUGK\\nq7z9eqECgYEA8qN2i0H6hhwFEpHdAjugqibLMK+2IdNIVwNxLJS9rivwM6HHfHuJ\\n8mZiyHramL7tFCM2zDXzxaXtyWIKAyrLwUdWqwnKt54tfJsgMHyZdJ1eaYE6hlyT\\n0FvrhzDcm+MIJv8YW96sLGWUnUcK/Ozd2ZPVzCOm9grIxAker7T8MW0CgYEA2n2p\\nDMg+KHO5Xd0ZGRMolQlebsZ/O8tfxqpQkw7XjQBhvz5CYb+YPHnRI4beeU9aHeUA\\n8uccdMGV+PyXv9MA2rhdeKn3uZuZzPETCy2Te6SMTDWMsVZwXiqWoMGgdg5Hp2eW\\n3+Ci/H08tLJBS/N52E6oe7e0jqW3iODxHuzw3W0CgYA6b/QVBgb4VbdDCa5Y41OG\\np2E4kJkk/GXnzwRq4EfustZfGQ+ag4Ztwwr3jd8n+pPOzcxc0oGrkJL8dYhDywLX\\nwf61ot4X6xi5cgMGqnurAlvCvUUDJzjSbdED9lirkrpb6gRL3A1LhAuO9ZVH5SRp\\nSpmrWMrVZzODQ08IsmYq4QKBgQCcRx1PgzrSfFOuC6MUCFwSnezplxkSj9klpFSV\\nmxwaQpenzsR0XjJpr0gj/SfL5TI0B8Sx+RSlfoHi4ek4z5fg2dYhpJEINX/A0v4o\\nFKVU3tFrATJs9cLR1+x9d4Fqb7RYzQNhhq+NoZZ2OLnztWcFjN1+AFwpW+b3BM3y\\nrM9r0QKBgQC44PbeFPO60XkfjhxgS/ud749dC8aOu7RMSonn6gtKQT5OZ2UFvola\\nFganFZNzpZD0RZLaBsaaXp5XAK6dUrQLKISZCrWyqBVJCnbzXshQTPZ/B/hRmR2k\\nkrDEmcCz7O5rbahhpJvoSbOY+75hYeFoMIxQOd2kXFB+GANoNN1NCQ==\\n-----END RSA PRIVATE KEY-----\\n\"\n" +
-            "  }\n" +
-            "}";
+//    private Uri filePath;
+    private String authConfig;
     private Uplink uplink;
+    Time time = new Time();
+    long sequence = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        initUplink();
+
         setSupportActionBar(binding.toolbar);
 
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
@@ -55,36 +56,53 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void onClick(View view) {
-                initUplink(view);
+                try {
+                    time.setToNow();
+                    long timestamp = time.toMillis(false);
+                    JSONObject payload = new JSONObject();
+                    payload.put("stream", "current_time");
+                    payload.put("timestamp", timestamp);
+                    payload.put("sequence", sequence++);
+                    JSONObject current_time = new JSONObject();
+                    current_time.put("current_time", timestamp);
+                    payload.put("payload", current_time);
+
+                    uplink.send(String.valueOf(payload), "current_time");
+                } catch (Exception e) {
+                    Log.e("Uplink Send", e.toString());
+                }
             }
         });
     }
 
-    public void initUplink(View view) {
+    @Override
+    public void recvdAction(String action) {
+        Log.i("Uplink recv", action);
+    }
+
+    public void initUplink() {
         try {
 //            selectConfig();
-            if (authConfig.isEmpty()) {
-                throw new Exception("Empty auth config");
-            }
             // Edit persistence config
-            String path = Environment.getExternalStorageDirectory().getPath() + "/uplink";
-            JSONObject config = new JSONObject(authConfig);
-            String broker = config.getString("broker");
-            JSONObject persist = new JSONObject("{\n" +
-                    "    \"path\": \"" + path + "\",\n" +
-                    "    \"max_file_size\": 104857600,\n" +
-                    "    \"max_file_count\": 3\n" +
-                    "  },\n");
-            config.put("persistence", persist);
+            JSONObject config = new JSONObject();
+            config.put("project_id", "test");
+            config.put("broker", "demo.bytebeam.io");
+            config.put("port", 8883);
+            config.put("device_id", "1082");
+            JSONObject auth = new JSONObject();
+            auth.put("ca_certificate", "-----BEGIN CERTIFICATE-----\nMIIFrDCCA5SgAwIBAgICB+MwDQYJKoZIhvcNAQELBQAwdzEOMAwGA1UEBhMFSW5k\naWExETAPBgNVBAgTCEthcm5hdGFrMRIwEAYDVQQHEwlCYW5nYWxvcmUxFzAVBgNV\nBAkTDlN1YmJpYWggR2FyZGVuMQ8wDQYDVQQREwY1NjAwMTExFDASBgNVBAoTC0J5\ndGViZWFtLmlvMB4XDTIxMDkwMjExMDYyM1oXDTMxMDkwMjExMDYyM1owdzEOMAwG\nA1UEBhMFSW5kaWExETAPBgNVBAgTCEthcm5hdGFrMRIwEAYDVQQHEwlCYW5nYWxv\ncmUxFzAVBgNVBAkTDlN1YmJpYWggR2FyZGVuMQ8wDQYDVQQREwY1NjAwMTExFDAS\nBgNVBAoTC0J5dGViZWFtLmlvMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC\nAgEAr/bnOa/8AUGZmd/s+7rejuROgeLqqU9X15KKfKOBqcoMyXsSO65UEwpzadpw\nMl7GDCdHqFTymqdnAnbhgaT1PoIFhOG64y7UiNgiWmbh0XJj8G6oLrW9rQ1gug1Q\n/D7x2fUnza71aixiwEL+KsIFYIdDuzmoRD3rSer/bKOcGGs0WfB54KqIVVZ1DwsU\nk1wx5ExsKo7gAdXMAbdHRI2Szmn5MsZwGL6V0LfsKLE8ms2qlZe50oo2woLNN6XP\nRfRL4bwwkdsCqXWkkt4eUSNDq9hJsuINHdhO3GUieLsKLJGWJ0lq6si74t75rIKb\nvvsFEQ9mnAVS+iuUUsSjHPJIMnn/J64Nmgl/R/8FP5TUgUrHvHXKQkJ9h/a7+3tS\nlV2KMsFksXaFrGEByGIJ7yR4qu9hx5MXf8pf8EGEwOW/H3CdWcC2MvJ11PVpceUJ\neDVwE7B4gPM9Kx02RNwvUMH2FmYqkXX2DrrHQGQuq+6VRoN3rEdmGPqnONJEPeOw\nZzcGDVXKWZtd7UCbcZKdn0RYmVtI/OB5OW8IRoXFYgGB3IWP796dsXIwbJSqRb9m\nylICGOceQy3VR+8+BHkQLj5/ZKTe+AA3Ktk9UADvxRiWKGcejSA/LvyT8qzz0dqn\nGtcHYJuhJ/XpkHtB0PykB5WtxFjx3G/osbZfrNflcQZ9h1MCAwEAAaNCMEAwDgYD\nVR0PAQH/BAQDAgKEMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFKl/MTbLrZ0g\nurneOmAfBHO+LHz+MA0GCSqGSIb3DQEBCwUAA4ICAQAlus/uKic5sgo1d2hBJ0Ak\ns1XJsA2jz+OEdshQHmCCmzFir3IRSuVRmDBaBGlJDHCELqYxKn6dl/sKGwoqoAQ5\nOeR2sey3Nmdyw2k2JTDx58HnApZKAVir7BDxbIbbHmfhJk4ljeUBbertNXWbRHVr\ncs4XBNwXvX+noZjQzmXXK89YBsV2DCrGRAUeZ4hQEqV7XC0VKmlzEmfkr1nibDr5\nqwbI+7QWIAnkHggYi27lL2UTHpbsy9AnlrRMe73upiuLO7TvkwYC4TyDaoQ2ZRpG\nHY+mxXLdftoMv/ZvmyjOPYeTRQbfPqoRqcM6XOPXwSw9B6YddwmnkI7ohNOvAVfD\nwGptUc5OodgFQc3waRljX1q2lawZCTh58IUf32CRtOEL2RIz4VpUrNF/0E2vts1f\npO7V1vY2Qin998Nwqkxdsll0GLtEEE9hUyvk1F8U+fgjJ3Rjn4BxnCN4oCrdJOMa\nJCaysaHV7EEIMqrYP4jH6RzQzOXLd0m9NaL8A/Y9z2a96fwpZZU/fEEOH71t3Eo3\nV/CKlysiALMtsHfZDwHNpa6g0NQNGN5IRl/w1TS1izzjzgWhR6r8wX8OPLRzhNRz\n2HDbTXGYsem0ihC0B8uzujOhTHcBwsfxZUMpGjg8iycJlfpPDWBdw8qrGu8LeNux\na0cIevjvYAtVysoXInV0kg==\n-----END CERTIFICATE-----\n");
+            auth.put("device_certificate", "-----BEGIN CERTIFICATE-----\nMIIEajCCAlKgAwIBAgICB+MwDQYJKoZIhvcNAQELBQAwdzEOMAwGA1UEBhMFSW5k\naWExETAPBgNVBAgTCEthcm5hdGFrMRIwEAYDVQQHEwlCYW5nYWxvcmUxFzAVBgNV\nBAkTDlN1YmJpYWggR2FyZGVuMQ8wDQYDVQQREwY1NjAwMTExFDASBgNVBAoTC0J5\ndGViZWFtLmlvMB4XDTIyMDEwNDA1NDI1OFoXDTMyMDEwNDA1NDI1OFowHjENMAsG\nA1UEChMEdGVzdDENMAsGA1UEAxMEMTA4MjCCASIwDQYJKoZIhvcNAQEBBQADggEP\nADCCAQoCggEBAJsP5W81kSj1dr/PR2nnuTXFJtzvYVyN31xeQVWVBmEmepdL2WvC\nGYKb3nNkanMnMlq6eas8nI545cI1qqn0fmYs7V+K6vukbqVZdp+dcdUl4hr1t8dD\nbUolNpJ3gbe5x7ZjHBdc5GeXVhURsXdyCfy2x63gKgRDXulk15XKtJQMpN0dtm2W\nK0LQAthpqrl8JxV5bdNVmtqpBW94vU0KHonOD0xI6WMkzw1ucCWZ9SlXBCizc9kr\nDjJCOEOFTM0R9DMN4rFrudQ0ABOy0aaqkc+sDRLibbwPkRjiPUD4o92zviAZ67L0\nv3wUQl5xmXGltGa2z7juhY7P7BDJIuIFZQcCAwEAAaNZMFcwDgYDVR0PAQH/BAQD\nAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMCMB8GA1UdIwQYMBaAFKl/MTbLrZ0gurne\nOmAfBHO+LHz+MA8GA1UdEQQIMAaCBDEwODIwDQYJKoZIhvcNAQELBQADggIBAEDB\nJkRDXq25vEBbstifxo4MypbDd36T8WOMGp7/G8IlyhHo2TZMvW1nI2RT9xOgV/FY\nIoqwAOi90/wTlw1oNvqJxXFFLxpLM9ZLN9OrBgtJmuPfgp6RFE2aibHgML50BEab\nwPPMRna61Ba/1T6tRxumgsm8+R5Qj/zPUTPwE+rDb+qjrrNU9PrXWgNqoPPhkvK0\nrYjodNPXAVXL43TaUTEwTpdNb/BXSqkL2IwiW69GH4UHCBmQaYEpfelDJH2fGNSH\nK2OcScR3IM3RVQ3pQwPJUCOjs7dDOTl4EXD0XvxjPpj93H9Y5JITaK9eUjOk+7m0\nTXGii9tBnUyjtD+V7yAV/7u2hXSPK1BECykmEq08E7+qS8iWK5lEfkW/LkuZQC98\nba2c1I+nmgsIoDuJJYxuTKbwa/+GQfcLCCkgZ8pOkX8ePIi4INqf3rytjLz6dhhb\nssM6xVtFHliF/38cFXJBace0/OiicMWjW/sgXWa6RsB7E7eyIeFGn8f68ZCiK+h/\nhhAoQg1aMU0KCj+s8M1ZjzjcDNZqHEIPLagZgd22khyIzCu6X0JZVc13GCHEfxa9\nC+Hw/wHuP5pK0QsEL/AwyibpLvo/46pGmzvoOYAUPnYBSaNoktstkGzIHpngzkvN\neqNdy/8aDV388zKXYSMx72XrfVIICJu/Inh9GH3N\n-----END CERTIFICATE-----\n");
+            auth.put("device_private_key", "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAmw/lbzWRKPV2v89Haee5NcUm3O9hXI3fXF5BVZUGYSZ6l0vZ\na8IZgpvec2RqcycyWrp5qzycjnjlwjWqqfR+ZiztX4rq+6RupVl2n51x1SXiGvW3\nx0NtSiU2kneBt7nHtmMcF1zkZ5dWFRGxd3IJ/LbHreAqBENe6WTXlcq0lAyk3R22\nbZYrQtAC2GmquXwnFXlt01Wa2qkFb3i9TQoeic4PTEjpYyTPDW5wJZn1KVcEKLNz\n2SsOMkI4Q4VMzRH0Mw3isWu51DQAE7LRpqqRz6wNEuJtvA+RGOI9QPij3bO+IBnr\nsvS/fBRCXnGZcaW0ZrbPuO6Fjs/sEMki4gVlBwIDAQABAoIBADZ0O6d1UVfn897i\nRPr9JH6skLxP2IovTHxcoWcToZzmbXDKcz0zec/zOwidAAEWh8ly6R1oeLZT4KP2\nQsvSj70EFAxUdbcPhMfOhikBmqM23ZOILRTuKeg671I6Y7SIqojzfz75IUD71YAq\nqX7/7l/wNGlsanT6z8742fjBqe6/ggbh4JHanZBtTSQlt8AtP4PwLWkQzEiED2bp\nWzlIvfT8ugISI8sgPcjeIP0TlJtV+buQ1lMKwrmOa4+Dj12upJ5qY1EIwayJ0f9L\nczZBPkuHskDgOtl4P5lNjLjNwqtEZ/Rb+vKR1Nsxn5EEmpc88O9OYi45ACOv8Ylj\nLEaGQDkCgYEAxJDCl8RV7gZElqf7WtBTpgrQInsn1r3sdDaz7Pz7SOJuZdk6dXir\nQUfA2BgWtSegnK202PJPMB/LyZKoE8fGvPYI5vFvcnzWZUoG8MpwvlpDAolaKPg3\nmWcK/bz9US+pZFLpsQ0ly/OxTg5mhZwbnei5Ii1x0ThKW2LQpUeEZzUCgYEAyfKM\nZsxGmNXeN520485GBG00eYwk2j5vnjbE8hkLBxxIJcaF7arT3Sg4JVkntbO11g+j\nbfoDFEtKEmQ2hV4UNVMTn94mlVhIiuFeszmiHziccZwApY/xGBRKWbqdCaI0XE6N\nPNrm3ITEI+bQ6zEZeZBGHiYyisve0KgLlO6lFssCgYEAqZ6lXON+p0RfYYYZX7dP\nx4OjMW4G5cbESVB/GO0BRlamn1rBmGcFmPJ7Fb5Lsg09CpbW7TLDZKq7ZvkX8uG8\nvIivC+KhojDZrVQhAx4eBhTLqF+wHpR7HfQORwETs0AmszzdDfxjdkiW4t2IWJlq\nN2yAfV6rzbf+ajeuBkHdnlUCgYBhUU8zorFKqZWiu48WUKsRKwcko9KGkZv8ZGxY\nNpVH4esquRaFR9M9OkqERQiL2YSBGZwqPVcKipWxczWK46FdaSGF4uo5AghDVQPr\n3pQv83oAjasKHemTLwP9ZZ6Tq+ULrpcFgn/KOPjETFDVZh3epRYFJWcp18ESUEj0\nhmRsLQKBgE1ZmFync7ltNX6qzbHYQaDaozgR5/Twj/WV3dCEw+aPbb4jtEIpN/+0\nDm2QAZQu2l9i8RSZ2Az/HWpgpJCR0tRs30yQqvB8yVzlkCyaZY1lhRaLtEGIOKAl\np6SOESkLP3ryKGPvHyH//OsJkC8v4kMY8t15LOZcFgqx6ElLc27P\n-----END RSA PRIVATE KEY-----\n");
+            config.put("authentication", auth);
             authConfig = config.toString();
-
             uplink = new Uplink(authConfig);
-            Snackbar.make(getCurrentFocus(), "Connecting to: " + broker, Snackbar.LENGTH_LONG).show();
+            uplink.subscribe(this);
         } catch (Exception e) {
             Log.e("Couldn't start uplink", e.toString());
-            Snackbar.make(view, "Couldn't connect: " + e, Snackbar.LENGTH_LONG).show();
+            Snackbar.make(getCurrentFocus(), "Couldn't connect: " + e, Snackbar.LENGTH_LONG).show();
         }
     }
 
