@@ -17,9 +17,7 @@ use std::sync::Arc;
 use figment::providers::{Data, Json, Toml};
 use figment::Figment;
 use flume::Receiver;
-use fragile::Fragile;
 use log::{error, info};
-use tokio::runtime;
 
 use uplink::{spawn_uplink, Action, ActionResponse, Config, Payload, Stream};
 
@@ -60,6 +58,10 @@ pub trait ActionCallback {
     fn recvd_action(&self, action: String);
 }
 
+struct CB(pub Box<dyn ActionCallback>);
+
+unsafe impl Send for CB {}
+
 pub struct Uplink {
     action_stream: Stream<ActionResponse>,
     streams: HashMap<String, Stream<Payload>>,
@@ -72,7 +74,7 @@ impl Uplink {
         android_logger::init_once(
             android_logger::Config::default()
                 .with_min_level(log::Level::Debug)
-                .with_tag("Hello"),
+                .with_tag("uplink"),
         );
         log_panics::init();
         info!("init log system - done");
@@ -127,32 +129,25 @@ impl Uplink {
     }
 
     pub fn subscribe(&mut self, cb: Box<dyn ActionCallback>) -> Result<(), String> {
-        let cb = Fragile::new(cb);
+        let cb = CB(cb);
         let bridge_rx = self.bridge_rx.clone();
-        std::thread::spawn(|| {
-            if let Err(e) = run_subscriber(bridge_rx, cb) {
+        std::thread::spawn(move || {
+            if let Err(e) = |cb: CB, bridge_rx: Receiver<Action>| -> Result<(), String> {
+                loop {
+                    info!("Running subscriber");
+                    let recv = bridge_rx.recv().map_err(|e| e.to_string())?;
+                    let action = serde_json::to_string(&recv).map_err(|e| e.to_string())?;
+                    info!("Action received, pushing to app: {}", &action);
+                    cb.0.recvd_action(action);
+                }
+            }(cb, bridge_rx)
+            {
                 error!("Error while handling callback: {}", e);
             }
         });
 
         Ok(())
     }
-}
-
-fn run_subscriber(
-    bridge_rx: Receiver<Action>,
-    cb: Fragile<Box<dyn ActionCallback>>,
-) -> Result<(), String> {
-    runtime::Builder::new_current_thread()
-        .build()
-        .map_err(|e| e.to_string())?
-        .block_on(async move {
-            loop {
-                let recv = bridge_rx.recv_async().await.map_err(|e| e.to_string())?;
-                let action = serde_json::to_string(&recv).map_err(|e| e.to_string())?;
-                cb.get().recvd_action(action);
-            }
-        })
 }
 
 include!(concat!(env!("OUT_DIR"), "/java_glue.rs"));
