@@ -81,20 +81,29 @@ impl Uplink {
 
         info!("Config path: {}", &config);
 
-        let config: Arc<Config> = Arc::new(
-            Figment::new()
-                .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
-                .merge(Data::<Json>::string(&config))
-                .extract()
-                .map_err(|e| e.to_string())?,
-        );
+        let mut config: Config = Figment::new()
+            .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
+            .merge(Data::<Json>::string(&config))
+            .extract()
+            .map_err(|e| e.to_string())?;
+        let tenant_id = config.project_id.trim();
+        let device_id = config.device_id.trim();
+        for config in config.streams.values_mut() {
+            let topic = str::replace(&config.topic, "{tenant_id}", tenant_id);
+            config.topic = topic;
+
+            let topic = str::replace(&config.topic, "{device_id}", device_id);
+            config.topic = topic;
+        }
 
         info!("Config: {:#?}", config);
+        let config = Arc::new(config);
 
         let (bridge_rx, tx, action_stream) =
             spawn_uplink(config.clone()).map_err(|e| e.to_string())?;
 
         let mut streams = HashMap::new();
+
         for (stream, cfg) in config.streams.iter() {
             streams.insert(
                 stream.to_owned(),
@@ -114,9 +123,9 @@ impl Uplink {
         })
     }
 
-    pub fn send(&mut self, data: String, stream: String) -> Result<(), String> {
-        let data: Payload = serde_json::from_str(&data).map_err(|e| e.to_string())?;
-        match self.streams.get_mut(&stream) {
+    pub fn send(&mut self, data: String) -> Result<(), String> {
+        let data = Payload::from_string(data).map_err(|e| e.to_string())?;
+        match self.streams.get_mut(&data.stream) {
             Some(x) => x.push(data).map_err(|e| e.to_string()),
             _ => Err("Couldn't get stream".to_owned()),
         }

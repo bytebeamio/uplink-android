@@ -66,11 +66,10 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
                     payload.put("stream", "current_time");
                     payload.put("timestamp", timestamp);
                     payload.put("sequence", sequence++);
-                    JSONObject current_time = new JSONObject();
-                    current_time.put("current_time", timestamp);
-                    payload.put("payload", current_time);
-
-                    uplink.send(String.valueOf(payload), "current_time");
+                    payload.put("current_time", timestamp);
+                    String obj = String.valueOf(payload);
+                    Log.i("uplink", obj);
+                    uplink.send(obj);
                 } catch (Exception e) {
                     Log.e("Uplink Send", e.toString());
                 }
@@ -100,7 +99,6 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
             authConfig = config.toString();
             uplink = new Uplink(authConfig);
             uplink.subscribe(this);
-            this.recvdAction("Subscription performed");
         } catch (Exception e) {
             Log.e("Couldn't start uplink", e.toString());
             Snackbar.make(getCurrentFocus(), "Couldn't connect: " + e, Snackbar.LENGTH_LONG).show();
