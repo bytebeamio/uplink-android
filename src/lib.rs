@@ -86,6 +86,10 @@ impl Uplink {
             .merge(Data::<Json>::string(&config))
             .extract()
             .map_err(|e| e.to_string())?;
+
+        if let Some(persistence) = &config.persistence {
+            std::fs::create_dir_all(&persistence.path).map_err(|e| e.to_string())?;
+        }
         let tenant_id = config.project_id.trim();
         let device_id = config.device_id.trim();
         for config in config.streams.values_mut() {
