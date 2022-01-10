@@ -7,7 +7,7 @@ fn main() {
     let out_src = Path::new(&out_dir).join("java_glue.rs");
 
     let flap_gen = flapigen::Generator::new(LanguageConfig::JavaConfig(JavaConfig::new(
-        Path::new("app")
+        Path::new("lib")
             .join("src")
             .join("main")
             .join("java")
