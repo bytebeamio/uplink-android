@@ -7,7 +7,6 @@ edition = "2021"
 android_logger = "0.10"
 figment = { version = "0.10.6", features = ["toml", "json"] }
 flume = "0.10.9"
-fragile = "1"
 jni-sys = "0.3"
 log = "0.4"
 log-panics = "2.0"
@@ -21,4 +20,3 @@ crate-type = ["lib", "cdylib"]
 
 [build-dependencies]
 flapigen = "0.6.0-pre7"
-env_logger = "0.8"

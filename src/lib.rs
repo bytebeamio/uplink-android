@@ -79,8 +79,6 @@ impl Uplink {
         log_panics::init();
         info!("init log system - done");
 
-        info!("Config path: {}", &config);
-
         let mut config: Config = Figment::new()
             .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
             .merge(Data::<Json>::string(&config))
