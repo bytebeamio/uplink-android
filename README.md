@@ -29,9 +29,9 @@ class Foo {
     ...
 }
 ```
-4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.json):
+4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.JSON):
 ```java
-String config = ".."; // A string containing json formatted uplink config.
+String config = ".."; // A string containing JSON formatted uplink config.
 try {
     uplink = new Uplink(config);
 } catch (Exception e) {
@@ -40,7 +40,7 @@ try {
 ```
 5. Once configured and connected to a broker, you can send data by using the `Payload` format as [described here](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#streamed-data):
 ```java
-String data = ".."; // A string containing data that is json formatted Payload.
+String data = ".."; // A string containing data that is JSON formatted Payload.
 try {
     uplink.send(data);
 } catch (Exception e) {
@@ -53,7 +53,7 @@ class FooRecv implements ActionCallback {
     ...
     @Override
     public void recvdAction(String action) {
-        ... // action contains a json formatted Action and can be used by your app to execute operations. See uplink application docs.
+        ... // action contains a JSON formatted Action and can be used by your app to execute operations. See uplink application docs.
     }
 }
 
@@ -66,6 +66,19 @@ try {
 }
 ```
 > **NOTE**: The Foo class itself can also be written such that it implements `ActionCallback` and hence you can subsribe by passing a reference to itself by using the `this` keyword as is demonstrated within the demo app, [here in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L116).
+
+You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which are also to be sent as JSON formatted strings:
+```java
+String response = ".."; // A string containing an ActionResponse in JSON format.
+try {
+    uplink.respond(response);
+} catch (Exception e) {
+    ...
+}
+```
+
+## How to run the demo applicaiton?
+You can compile and run the demo application included in this repo, on an emulator or personal developer device of your choice, by using the build and launch mechanism provided within Android Studio.
 
 ### External Dependency
 1. [flapigen-rs](https://github.com/Dushistov/flapigen-rs)
