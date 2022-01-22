@@ -12,7 +12,60 @@ The library can be exported as an archived package that can be easily loaded int
 ./gradlew build
 ```
 
-> **Demo**: To demonstrate the capabilities of the Android library, we have included an example program in the `demo` branch of this git repository.
+## How to use `uplink-android` in your app?
+1. Build the `uplink-release.aar` file and copy it into their app's `src/main/libs` folder.
+2. One can import the library in their own app by adding the following line to their app's `build.gradle` file:
+```gradle
+dependencies {
+    implementation file('path/to/src/main/libs/uplink-release.aar')
+}
+```
+3. Create an uplink object inside the appropriate `*Activity.java` file:
+```java
+import io.bytebeam.uplink.Uplink;
+
+class Foo {
+    private Uplink uplink;
+    ...
+}
+```
+4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.json):
+```java
+String config = ".."; // A string containing json formatted uplink config.
+try {
+    uplink = new Uplink(config);
+} catch (Exception e) {
+    ...
+}
+```
+5. Once configured and connected to a broker, you can send data by using the `Payload` format as [described here](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#streamed-data):
+```java
+String data = ".."; // A string containing data that is json formatted Payload.
+try {
+    uplink.send(data);
+} catch (Exception e) {
+    ...
+}
+```
+6. For your application to be able to recieve an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
+```java
+class FooRecv implements ActionCallback {
+    ...
+    @Override
+    public void recvdAction(String action) {
+        ... // action contains a json formatted Action and can be used by your app to execute operations. See uplink application docs.
+    }
+}
+
+// Inside Foo class
+FooRecv recv = ...; // Considered to be properly initialized
+try {
+    uplink.subscribe(recv);
+} catch (Exception e) {
+    ...
+}
+```
+> **NOTE**: The Foo class itself can also be written such that it implements `ActionCallback` and hence you can subsribe by passing a reference to itself by using the `this` keyword as is demonstrated within the demo app, [here in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L116).
 
 ### External Dependency
 1. [flapigen-rs](https://github.com/Dushistov/flapigen-rs)
