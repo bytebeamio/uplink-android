@@ -8,3 +8,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "uplink"
 include ':lib'
+include ':demo'
