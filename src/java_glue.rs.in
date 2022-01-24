@@ -1,15 +1,41 @@
 use jni_sys::*;
 
+foreign_class!(class UplinkConfig {
+    self_type UplinkConfig;
+    constructor UplinkConfig::new(_: String) -> Result<UplinkConfig, String>;
+});
+
+foreign_class!(class UplinkPayload {
+    self_type UplinkPayload;
+    constructor UplinkPayload::new(_: String, _: u64, _: u32, _: String) -> Result<UplinkPayload, String>;
+});
+
+foreign_class!(class ActionResponse {
+    self_type ActionResponse;
+    constructor ActionResponse::new(_: &str) -> ActionResponse;
+    fn ActionResponse::progress(_: &str, _: u8) -> ActionResponse;
+    fn ActionResponse::success(_: &str) -> ActionResponse;
+    fn ActionResponse::failure(_: &str, _: String) -> ActionResponse;
+});
+
+foreign_class!(class UplinkAction {
+    self_type UplinkAction;
+    // NOTE: This is for java constructor only as a placeholder, don't use.
+    constructor UplinkAction::new() -> UplinkAction;
+    fn UplinkAction::get_id(&self) -> &str;
+    fn UplinkAction::get_payload(&self) -> &str;
+});
+
 foreign_callback!(callback ActionCallback {
     self_type ActionCallback;
-    recvdAction = ActionCallback::recvd_action(&self, action: String);
+    recvdAction = ActionCallback::recvd_action(&self, action: UplinkAction);
 });
 
 foreign_class!(class Uplink {
     self_type Uplink;
-    constructor Uplink::new(_: String) -> Result<Uplink, String>;
-    fn Uplink::send(&mut self, _: String) -> Result<(), String>;
-    fn Uplink::respond(&mut self, _: String) -> Result<(), String>;
+    constructor Uplink::new(_: UplinkConfig) -> Result<Uplink, String>;
+    fn Uplink::send(&mut self, _: UplinkPayload) -> Result<(), String>;
+    fn Uplink::respond(&mut self, _: ActionResponse) -> Result<(), String>;
     fn Uplink::subscribe(&mut self, cb: Box<dyn ActionCallback>) -> Result<(), String>;
 
     foreign_code r#"

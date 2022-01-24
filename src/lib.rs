@@ -55,12 +55,69 @@ const DEFAULT_CONFIG: &'static str = r#"
 "#;
 
 pub trait ActionCallback {
-    fn recvd_action(&self, action: String);
+    fn recvd_action(&self, action: UplinkAction);
 }
 
 struct CB(pub Box<dyn ActionCallback>);
 
 unsafe impl Send for CB {}
+
+pub struct UplinkConfig {
+    inner: Config,
+}
+
+impl UplinkConfig {
+    pub fn new(config: String) -> Result<UplinkConfig, String> {
+        Ok(UplinkConfig {
+            inner: Figment::new()
+                .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
+                .merge(Data::<Json>::string(&config))
+                .extract()
+                .map_err(|e| e.to_string())?,
+        })
+    }
+}
+
+pub struct UplinkPayload {
+    inner: Payload,
+}
+
+impl UplinkPayload {
+    pub fn new(
+        stream: String,
+        timestamp: u64,
+        sequence: u32,
+        data: String,
+    ) -> Result<UplinkPayload, String> {
+        Ok(UplinkPayload {
+            inner: Payload {
+                stream,
+                timestamp,
+                sequence,
+                payload: serde_json::from_str(&data).map_err(|e| e.to_string())?,
+            },
+        })
+    }
+}
+
+pub struct UplinkAction {
+    inner: Action,
+}
+
+impl UplinkAction {
+    // NOTE: This is a placeholder for java constructor, don't use, it will panic and fail.
+    pub fn new() -> UplinkAction {
+        unimplemented!()
+    }
+
+    pub fn get_id(&self) -> &str {
+        &self.inner.action_id
+    }
+
+    pub fn get_payload(&self) -> &str {
+        &self.inner.payload
+    }
+}
 
 pub struct Uplink {
     action_stream: Stream<ActionResponse>,
@@ -69,7 +126,7 @@ pub struct Uplink {
 }
 
 impl Uplink {
-    pub fn new(config: String) -> Result<Uplink, String> {
+    pub fn new(config: UplinkConfig) -> Result<Uplink, String> {
         #[cfg(target_os = "android")]
         android_logger::init_once(
             android_logger::Config::default()
@@ -79,11 +136,7 @@ impl Uplink {
         log_panics::init();
         info!("init log system - done");
 
-        let mut config: Config = Figment::new()
-            .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
-            .merge(Data::<Json>::string(&config))
-            .extract()
-            .map_err(|e| e.to_string())?;
+        let mut config = config.inner;
 
         if let Some(persistence) = &config.persistence {
             std::fs::create_dir_all(&persistence.path).map_err(|e| e.to_string())?;
@@ -125,17 +178,15 @@ impl Uplink {
         })
     }
 
-    pub fn send(&mut self, data: String) -> Result<(), String> {
-        let data = Payload::from_string(data).map_err(|e| e.to_string())?;
+    pub fn send(&mut self, payload: UplinkPayload) -> Result<(), String> {
+        let data = payload.inner;
         match self.streams.get_mut(&data.stream) {
             Some(x) => x.push(data).map_err(|e| e.to_string()),
             _ => Err("Couldn't get stream".to_owned()),
         }
     }
 
-    pub fn respond(&mut self, response: String) -> Result<(), String> {
-        let response: ActionResponse =
-            serde_json::from_str(&response).map_err(|e| e.to_string())?;
+    pub fn respond(&mut self, response: ActionResponse) -> Result<(), String> {
         self.action_stream.push(response).map_err(|e| e.to_string())
     }
 
@@ -143,21 +194,20 @@ impl Uplink {
         let cb = CB(cb);
         let bridge_rx = self.bridge_rx.clone();
         std::thread::spawn(move || {
-            if let Err(e) = |cb: CB, bridge_rx: Receiver<Action>| -> Result<(), String> {
-                loop {
-                    info!("Running subscriber");
-                    let recv = bridge_rx.recv().map_err(|e| e.to_string())?;
-                    let action = serde_json::to_string(&recv).map_err(|e| e.to_string())?;
-                    info!("Action received, pushing to app: {}", &action);
-                    cb.0.recvd_action(action);
-                }
-            }(cb, bridge_rx)
-            {
+            if let Err(e) = subscriber(cb, bridge_rx) {
                 error!("Error while handling callback: {}", e);
             }
         });
 
         Ok(())
+    }
+}
+
+fn subscriber(cb: CB, bridge_rx: Receiver<Action>) -> Result<(), String> {
+    loop {
+        cb.0.recvd_action(UplinkAction {
+            inner: bridge_rx.recv().map_err(|e| e.to_string())?,
+        });
     }
 }
 
