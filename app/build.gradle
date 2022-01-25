@@ -6,7 +6,7 @@ android {
     compileSdk 31
 
     defaultConfig {
-        applicationId "io.bytebeam.demo"
+        applicationId "io.bytebeam.console"
         minSdk 21
         targetSdk 31
         versionCode 1

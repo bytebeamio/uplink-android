@@ -84,17 +84,16 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
     }
 
     public void initUplink() {
+        String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
+        // NOTE: base is String contents of config file
+        InputStream in_s = getResources().openRawResource(R.raw.device_1076);
+        Scanner sc = new Scanner(in_s);
+        StringBuilder sb = new StringBuilder();
+        while(sc.hasNext()){
+            sb.append(sc.nextLine());
+        }
+        String base = sb.toString();
         try {
-            String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
-            // NOTE: base is String contents of config file
-            InputStream in_s = getResources().openRawResource(R.raw.device_1076);
-            Scanner sc = new Scanner(in_s);
-            StringBuffer sb = new StringBuffer();
-            while(sc.hasNext()){
-                sb.append(sc.nextLine());
-            }
-            String base = sb.toString();
-
             ConfigBuilder config = new ConfigBuilder(base)
                     .setOta(true, baseFolder + "/ota-file")
                     .setPersistence(baseFolder + "/uplink", 104857600, 3);
