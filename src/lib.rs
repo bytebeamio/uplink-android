@@ -19,7 +19,8 @@ use figment::Figment;
 use flume::Receiver;
 use log::{error, info};
 
-use uplink::{spawn_uplink, Action, ActionResponse, Config, Payload, Stream};
+use uplink::config::{Config, Ota, Persistence, Stats};
+use uplink::{spawn_uplink, Action, ActionResponse, Payload, Stream};
 
 const DEFAULT_CONFIG: &'static str = r#"
     bridge_port = 5555
@@ -75,6 +76,32 @@ impl UplinkConfig {
                 .extract()
                 .map_err(|e| e.to_string())?,
         })
+    }
+
+    pub fn set_ota(&mut self, enabled: bool, path: String) {
+        self.inner.ota = Ota { enabled, path };
+    }
+
+    pub fn set_stats(&mut self, enabled: bool, update_period: u64) {
+        self.inner.stats = Stats {
+            enabled,
+            process_names: vec![],
+            update_period,
+            stream_size: None,
+        };
+    }
+
+    pub fn add_to_stats(&mut self, app: String) {
+        self.inner.stats.process_names.push(app);
+    }
+
+    pub fn set_persistence(&mut self, path: String, max_file_size: usize, max_file_count: usize) {
+        let persistence = Persistence {
+            path,
+            max_file_size,
+            max_file_count,
+        };
+        self.inner.persistence = Some(persistence);
     }
 }
 

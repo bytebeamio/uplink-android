@@ -3,6 +3,16 @@ use jni_sys::*;
 foreign_class!(class UplinkConfig {
     self_type UplinkConfig;
     constructor UplinkConfig::new(_: String) -> Result<UplinkConfig, String>;
+    fn UplinkConfig::set_ota(&mut self, _: bool, _: String);
+    fn UplinkConfig::set_stats(&mut self, _: bool, _: u64);
+    fn UplinkConfig::add_to_stats(&mut self, _: String);
+    fn UplinkConfig::set_persistence(&mut self, _: String, _: usize, _: usize);
+
+    foreign_code r#"
+    static {
+        System.loadLibrary("uplink_android");
+    }
+"#;
 });
 
 foreign_class!(class UplinkPayload {
