@@ -24,6 +24,7 @@ import io.bytebeam.uplink.UplinkPayload;
 import org.json.JSONObject;
 
 import java.io.InputStream;
+import java.util.Scanner;
 
 public class MainActivity extends AppCompatActivity implements ActionCallback {
 
@@ -87,8 +88,12 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
             String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
             // NOTE: base is String contents of config file
             InputStream in_s = getResources().openRawResource(R.raw.device_1076);
-            byte[] b = new byte[in_s.available()];
-            String base = new String(b);
+            Scanner sc = new Scanner(in_s);
+            StringBuffer sb = new StringBuffer();
+            while(sc.hasNext()){
+                sb.append(sc.nextLine());
+            }
+            String base = sb.toString();
 
             ConfigBuilder config = new ConfigBuilder(base)
                     .setOta(true, baseFolder + "/ota-file")
