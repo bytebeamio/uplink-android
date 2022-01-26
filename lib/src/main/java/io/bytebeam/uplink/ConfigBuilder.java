@@ -8,20 +8,20 @@ public class ConfigBuilder {
     }
 
     public ConfigBuilder setOta(boolean enabled, String path) {
-        config.set_ota(enabled, path);
+        config.setOta(enabled, path);
         return this;
     }
 
     public ConfigBuilder setStats(boolean enabled, String[] processNames, int  updatePeriod) {
-        config.set_stats(enabled, updatePeriod);
+        config.setStats(enabled, updatePeriod);
         for (String app: processNames) {
-            config.add_to_stats(app);
+            config.addToStats(app);
         }
         return this;
     }
 
     public ConfigBuilder setPersistence(String path, long maxFileSize, int  maxFileCount) {
-        config.set_persistence(path, maxFileSize, maxFileCount);
+        config.setPersistence(path, maxFileSize, maxFileCount);
         return this;
     }
 

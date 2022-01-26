@@ -3,10 +3,10 @@ use jni_sys::*;
 foreign_class!(class UplinkConfig {
     self_type UplinkConfig;
     constructor UplinkConfig::new(_: String) -> Result<UplinkConfig, String>;
-    fn UplinkConfig::set_ota(&mut self, _: bool, _: String);
-    fn UplinkConfig::set_stats(&mut self, _: bool, _: u64);
-    fn UplinkConfig::add_to_stats(&mut self, _: String);
-    fn UplinkConfig::set_persistence(&mut self, _: String, _: usize, _: usize);
+    fn UplinkConfig::set_ota(&mut self, _: bool, _: String); alias setOta;
+    fn UplinkConfig::set_stats(&mut self, _: bool, _: u64); alias setStats;
+    fn UplinkConfig::add_to_stats(&mut self, _: String); alias addToStats;
+    fn UplinkConfig::set_persistence(&mut self, _: String, _: usize, _: usize); alias setPersistence;
 
     foreign_code r#"
     static {
@@ -30,10 +30,9 @@ foreign_class!(class ActionResponse {
 
 foreign_class!(class UplinkAction {
     self_type UplinkAction;
-    // NOTE: This is for java constructor only as a placeholder, don't use.
-    constructor UplinkAction::new() -> UplinkAction;
-    fn UplinkAction::get_id(&self) -> &str;
-    fn UplinkAction::get_payload(&self) -> &str;
+    private constructor = empty;
+    fn UplinkAction::get_id(&self) -> &str; alias getId;
+    fn UplinkAction::get_payload(&self) -> &str; alias getPayload;
 });
 
 foreign_callback!(callback ActionCallback {

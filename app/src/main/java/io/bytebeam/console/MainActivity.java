@@ -70,8 +70,8 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
     @Override
     public void recvdAction(UplinkAction action) {
         // Print to log received action
-        String actionId = action.get_id();
-        String payload = action.get_payload();
+        String actionId = action.getId();
+        String payload = action.getPayload();
         Log.i("Uplink Recv", "id: " + actionId + "; payload: " + payload);
 
         try {
