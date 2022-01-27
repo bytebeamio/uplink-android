@@ -22,10 +22,10 @@ foreign_class!(class UplinkPayload {
 
 foreign_class!(class ActionResponse {
     self_type ActionResponse;
-    constructor ActionResponse::new(_: &str) -> ActionResponse;
-    fn ActionResponse::progress(_: &str, _: u8) -> ActionResponse;
+    constructor ActionResponse::progress(_: &str, _: &str, _: u8) -> ActionResponse;
     fn ActionResponse::success(_: &str) -> ActionResponse;
     fn ActionResponse::failure(_: &str, _: String) -> ActionResponse;
+    fn ActionResponse::add_error(_: ActionResponse, _: String) -> ActionResponse;
 });
 
 foreign_class!(class UplinkAction {

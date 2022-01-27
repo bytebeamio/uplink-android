@@ -25,13 +25,13 @@ import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.util.Scanner;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements ActionCallback {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
-//    private Uri filePath;
-    private String authConfig;
     private Uplink uplink;
     Time time = new Time();
     long sequence = 1;
@@ -74,10 +74,27 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
         String payload = action.getPayload();
         Log.i("Uplink Recv", "id: " + actionId + "; payload: " + payload);
 
+        Executor executor = Executors.newSingleThreadExecutor();
+
+        executor.execute(() -> {
+            // A demonstration of how apps can also pass progress, success and failure messages regarding an action in execution to the cloud
+            if (Integer.parseInt(actionId) % 2 == 0) {
+                sendResponse(ActionResponse.failure(actionId, "Action failed"));
+            } else {
+                for (int i = 0; i < 10; i++) {
+                    sendResponse(new ActionResponse(actionId, "Running", (short) (i * 10)));
+                }
+                sendResponse(ActionResponse.success(actionId));
+            }
+        });
+    }
+
+    public void sendResponse(ActionResponse actionResponse) {
+        // Send action responses
         try {
-            // Sending action received response
-            ActionResponse actionResponse = new ActionResponse(actionId);
             uplink.respond(actionResponse);
+
+            Thread.sleep(1000);
         } catch (Exception e) {
             Log.e("Uplink Respond", e.toString());
         }
