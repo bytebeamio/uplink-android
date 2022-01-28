@@ -20,28 +20,47 @@ dependencies {
     implementation file('path/to/src/main/libs/uplink-release.aar')
 }
 ```
-3. Create an uplink object inside the appropriate `*Activity.java` file:
+3. Create an uplink object inside the appropriate `MainActivity.java` file:
 ```java
 import io.bytebeam.uplink.Uplink;
 
-class Foo {
+class MainActivity extends AppCompatActivity {
     private Uplink uplink;
     ...
 }
 ```
 4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.JSON):
 ```java
-String config = ".."; // A string containing JSON formatted uplink config.
+// A string containing JSON formatted uplink config.
+String configFile = "{\n" +
+    "   \"project_id\": \"abc\",\n" +
+    "   \"broker\": \"broker.example.com\",\n" +
+    "   \"port\": 8883,\n" +
+    "   \"device_id\": \"123\",\n" +
+    "   \"authentication\": {\n" +
+    "       \"ca_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
+    "       \"device_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
+    "       \"device_private_key\": \"-----BEGIN RSA PRIVATE KEY----------END RSA PRIVATE KEY-----\\n\"\n" +
+    "   }\n" +
+    "}";
+// Get base folder path for application
+String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
+
 try {
-    uplink = new Uplink(config);
+    ConfigBuilder config = new ConfigBuilder(configFile)
+                        .setOta(true, baseFolder + "/ota-file")
+                        .setPersistence(baseFolder + "/uplink", 104857600, 3);
+    uplink = new Uplink(config.build());
 } catch (Exception e) {
     ...
 }
 ```
 5. Once configured and connected to a broker, you can send data by using the `Payload` format as [described here](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#streamed-data):
 ```java
-String data = ".."; // A string containing data that is JSON formatted Payload.
 try {
+    JSONObject data = new JSONObject(); // JSON object that carries data to be sent to stream_name
+    data.put("field", "value");
+    UplinkPayload payload = new UplinkPayload("stream_name", timestamp, sequence, String.valueof(data));
     uplink.send(data);
 } catch (Exception e) {
     ...
@@ -49,27 +68,38 @@ try {
 ```
 6. For your application to be able to recieve an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
 ```java
-class FooRecv implements ActionCallback {
+class ActionRecvr implements ActionCallback {
     ...
     @Override
-    public void recvdAction(String action) {
-        ... // action contains a JSON formatted Action and can be used by your app to execute operations. See uplink application docs.
+    public void recvdAction(UplinkAction action) {
+        // action contains information that can be used by your app to execute operations. See uplink application docs for more info.
+        String id = action.getId();
+        String payload = action.getPayload();
     }
 }
 
-// Inside Foo class
-FooRecv recv = ...; // Considered to be properly initialized
+// Inside MainActivity class
+ActionRecvr recv; // Considered to be properly initialized
 try {
     uplink.subscribe(recv);
 } catch (Exception e) {
     ...
 }
 ```
-> **NOTE**: The Foo class itself can also be written such that it implements `ActionCallback` and hence you can subsribe by passing a reference to itself by using the `this` keyword as is demonstrated within the demo app, [here in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L116).
+> **NOTE**: The Foo class itself can also be written such that it implements `ActionCallback` and hence you can subsribe by passing a reference to itself by using the `this` keyword as is demonstrated within the demo app, [here in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L119).
 
-You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which are also to be sent as JSON formatted strings:
+You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which can be created using the `ActionResponse` class:
 ```java
-String response = ".."; // A string containing an ActionResponse in JSON format.
+// A response to indicate action's progress
+ActionResponse response = new ActionResponse(id, "Running", 10);
+// A response to indicate action's successful completion
+response = ActionResponse.success(id);
+// A response to indicate action's failed completion, along with error
+Exception e1 = new Exception("Error: 1");
+response = ActionResponse.failure(id, e1.toString());
+// You can carry multiple errors in a single response
+Exception e2 = new Exception("Error: 2");
+respose = ActionResponse.add_error(response, e2.toString());
 try {
     uplink.respond(response);
 } catch (Exception e) {
@@ -79,7 +109,3 @@ try {
 
 ## How to run the demo applicaiton?
 You can compile and run the demo application included in this repo, on an emulator or personal developer device of your choice, by using the build and launch mechanism provided within Android Studio.
-
-### External Dependency
-1. [flapigen-rs](https://github.com/Dushistov/flapigen-rs)
-2. See [`Cargo.toml`](./Cargo.toml)
