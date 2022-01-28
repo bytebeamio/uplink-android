@@ -1,4 +1,4 @@
-package io.bytebeam.console;
+package io.bytebeam.UplinkDemo;
 
 import org.junit.Test;
 

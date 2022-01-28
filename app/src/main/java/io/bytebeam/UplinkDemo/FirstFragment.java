@@ -1,4 +1,4 @@
-package io.bytebeam.console;
+package io.bytebeam.UplinkDemo;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
-import io.bytebeam.console.databinding.FragmentFirstBinding;
+import io.bytebeam.UplinkDemo.databinding.FragmentFirstBinding;
 
 public class FirstFragment extends Fragment {
 
