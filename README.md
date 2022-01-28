@@ -66,7 +66,7 @@ try {
     ...
 }
 ```
-6. For your application to be able to recieve an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
+6. For your application to be able to receive an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
 ```java
 class ActionRecvr implements ActionCallback {
     ...
@@ -86,7 +86,7 @@ try {
     ...
 }
 ```
-> **NOTE**: The Foo class itself can also be written such that it implements `ActionCallback` and hence you can subsribe by passing a reference to itself by using the `this` keyword as is demonstrated within the demo app, [here in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L119).
+> **NOTE**: The `MainActivity` class itself can also be written such that it implements `ActionCallback` and hence you can subscribe by passing a reference to itself, using `this` keyword as is demonstrated within the demo app, [in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L119).
 
 You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which can be created using the `ActionResponse` class:
 ```java
@@ -99,7 +99,7 @@ Exception e1 = new Exception("Error: 1");
 response = ActionResponse.failure(id, e1.toString());
 // You can carry multiple errors in a single response
 Exception e2 = new Exception("Error: 2");
-respose = ActionResponse.add_error(response, e2.toString());
+response = ActionResponse.add_error(response, e2.toString());
 try {
     uplink.respond(response);
 } catch (Exception e) {
@@ -107,5 +107,5 @@ try {
 }
 ```
 
-## How to run the demo applicaiton?
-You can compile and run the demo application included in this repo, on an emulator or personal developer device of your choice, by using the build and launch mechanism provided within Android Studio.
+## How to run the demo application?
+We have provided in this repo, a demo application that to an extent demonstrates how you can use the library. You can compile and run in on an emulator or personal developer device of your choice, by using the Build and Run utilities provided within Android Studio.
