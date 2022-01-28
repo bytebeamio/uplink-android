@@ -1,4 +1,4 @@
-package io.bytebeam.console;
+package io.bytebeam.UplinkDemo;
 
 import android.os.Bundle;
 import android.text.format.Time;
@@ -12,7 +12,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import io.bytebeam.console.databinding.ActivityMainBinding;
+import io.bytebeam.UplinkDemo.databinding.ActivityMainBinding;
 
 import io.bytebeam.uplink.ActionCallback;
 import io.bytebeam.uplink.ActionResponse;

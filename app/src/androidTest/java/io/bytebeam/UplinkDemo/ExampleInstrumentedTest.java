@@ -1,4 +1,4 @@
-package io.bytebeam.console;
+package io.bytebeam.UplinkDemo;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("io.bytebeam.console", appContext.getPackageName());
+        assertEquals("io.bytebeam.UplinkDemo", appContext.getPackageName());
     }
 }

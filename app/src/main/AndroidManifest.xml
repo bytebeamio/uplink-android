@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.bytebeam.console">
+    package="io.bytebeam.UplinkDemo">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACTION_BACKGROUND_DATA_SETTING_CHANGED" />
@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Console">
         <activity
-            android:name=".MainActivity"
+            android:name="io.bytebeam.UplinkDemo.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Console.NoActionBar">
