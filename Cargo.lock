@@ -395,7 +395,7 @@ dependencies = [
 [[package]]
 name = "disk"
 version = "0.1.0"
-source = "git+https://github.com/bytebeamio/uplink?branch=jni#6a18b11290d05fd157f48f7e82c55bf0364b74f1"
+source = "git+https://github.com/bytebeamio/uplink#79c26f4abbbc765c199a0a6c3449e8e212717cf7"
 dependencies = [
  "bytes 1.1.0",
  "log",
@@ -2683,7 +2683,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 [[package]]
 name = "uplink"
 version = "1.2.0"
-source = "git+https://github.com/bytebeamio/uplink?branch=jni#6a18b11290d05fd157f48f7e82c55bf0364b74f1"
+source = "git+https://github.com/bytebeamio/uplink#79c26f4abbbc765c199a0a6c3449e8e212717cf7"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",
