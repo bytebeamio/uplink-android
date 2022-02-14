@@ -20,7 +20,7 @@ use flume::Receiver;
 use log::{error, info};
 
 use uplink::config::{Config, Ota, Persistence, Stats};
-use uplink::{spawn_uplink, Action, ActionResponse, Payload, Stream};
+use uplink::{Action, ActionResponse, Payload, Stream};
 
 const DEFAULT_CONFIG: &'static str = r#"
     bridge_port = 5555
@@ -132,11 +132,6 @@ pub struct UplinkAction {
 }
 
 impl UplinkAction {
-    // NOTE: This is a placeholder for java constructor, don't use, it will panic and fail.
-    pub fn new() -> UplinkAction {
-        unimplemented!()
-    }
-
     pub fn get_id(&self) -> &str {
         &self.inner.action_id
     }
@@ -181,8 +176,8 @@ impl Uplink {
         info!("Config: {:#?}", config);
         let config = Arc::new(config);
 
-        let (bridge_rx, tx, action_stream) =
-            spawn_uplink(config.clone()).map_err(|e| e.to_string())?;
+        let mut uplink = uplink::Uplink::new(config.clone()).map_err(|e| e.to_string())?;
+        uplink.spawn().map_err(|e| e.to_string())?;
 
         let mut streams = HashMap::new();
 
@@ -193,15 +188,15 @@ impl Uplink {
                     stream.to_owned(),
                     cfg.topic.to_owned(),
                     cfg.buf_size,
-                    tx.clone(),
+                    uplink.bridge_data_tx(),
                 ),
             );
         }
 
         Ok(Uplink {
-            action_stream,
+            action_stream: uplink.action_status(),
+            bridge_rx: uplink.bridge_action_rx(),
             streams,
-            bridge_rx,
         })
     }
 
