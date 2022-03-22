@@ -11,14 +11,8 @@ env:
 jobs:
   release:
     name: Release AAR
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - armv7-linux-androideabi
-          - aarch64-linux-android
-          - i686-linux-android
-          - x86_64-linux-android
+    runs-on: 'docker'
+    image: 'Dockerfile'
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -33,11 +27,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-
-      - name: Install cross-compilation tools
-        uses: taiki-e/setup-cross-toolchain-action@v1
-        with:
-          target: ${{ matrix.target }}
 
       - name: Build AAR
         run: ./gradlew --no-daemon build
