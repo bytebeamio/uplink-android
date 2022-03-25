@@ -16,11 +16,11 @@ use std::sync::Arc;
 
 use figment::providers::{Data, Json, Toml};
 use figment::Figment;
-use flume::Receiver;
+use flume::{Receiver, Sender};
 use log::{error, info};
 
 use uplink::config::{Config, Ota, Persistence, Stats};
-use uplink::{Action, ActionResponse, Payload, Stream};
+use uplink::{Action, ActionResponse, Package, Payload, Stream};
 
 const DEFAULT_CONFIG: &'static str = r#"
     bridge_port = 5555
@@ -34,10 +34,6 @@ const DEFAULT_CONFIG: &'static str = r#"
 
     [streams.metrics]
     topic = "/tenants/{tenant_id}/devices/{device_id}/events/metrics/jsonarray"
-    buf_size = 10
-
-    [streams.current_time]
-    topic = "/tenants/{tenant_id}/devices/{device_id}/events/current_time/jsonarray"
     buf_size = 10
 
     # Action status stream from status messages from bridge
@@ -91,6 +87,8 @@ impl UplinkConfig {
         };
     }
 
+    // TODO: Add a method to insert `StreamConfig`s into inner.streams
+
     pub fn add_to_stats(&mut self, app: String) {
         self.inner.stats.process_names.push(app);
     }
@@ -142,9 +140,11 @@ impl UplinkAction {
 }
 
 pub struct Uplink {
+    config: Arc<Config>,
     action_stream: Stream<ActionResponse>,
     streams: HashMap<String, Stream<Payload>>,
     bridge_rx: Receiver<Action>,
+    data_tx: Sender<Box<dyn Package>>,
 }
 
 impl Uplink {
@@ -194,9 +194,11 @@ impl Uplink {
         }
 
         Ok(Uplink {
+            config,
             action_stream: uplink.action_status(),
             bridge_rx: uplink.bridge_action_rx(),
             streams,
+            data_tx: uplink.bridge_data_tx(),
         })
     }
 
@@ -204,7 +206,23 @@ impl Uplink {
         let data = payload.inner;
         match self.streams.get_mut(&data.stream) {
             Some(x) => x.push(data).map_err(|e| e.to_string()),
-            _ => Err("Couldn't get stream".to_owned()),
+            _ => {
+                self.streams.insert(
+                    data.stream.to_owned(),
+                    Stream::dynamic(
+                        &data.stream,
+                        &self.config.project_id,
+                        &self.config.device_id,
+                        self.data_tx.clone(),
+                    ),
+                );
+
+                self.streams
+                    .get_mut(&data.stream)
+                    .unwrap()
+                    .push(data)
+                    .map_err(|e| e.to_string())
+            }
         }
     }
 
