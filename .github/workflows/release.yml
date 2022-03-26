@@ -12,7 +12,7 @@ jobs:
   release:
     name: Release AAR
     runs-on: ubuntu-latest
-    container: devduttshenoi/androidxbuild
+    container: devduttshenoi/androidxbuild:0.1
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
