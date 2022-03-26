@@ -11,8 +11,8 @@ env:
 jobs:
   release:
     name: Release AAR
-    runs-on: 'docker'
-    image: 'Dockerfile'
+    runs-on: ubuntu-latest
+    container: devduttshenoi/androidxbuild
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
