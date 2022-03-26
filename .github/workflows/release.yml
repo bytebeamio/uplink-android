@@ -11,6 +11,7 @@ env:
 jobs:
   release:
     name: Release AAR
+    runs-on: ubuntu-latest
     container: devduttshenoi/androidxbuild:0.1
     steps:
       - uses: actions/checkout@v2
