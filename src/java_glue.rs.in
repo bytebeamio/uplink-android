@@ -33,6 +33,7 @@ foreign_class!(class UplinkAction {
     private constructor = empty;
     fn UplinkAction::get_id(&self) -> &str; alias getId;
     fn UplinkAction::get_payload(&self) -> &str; alias getPayload;
+    fn UplinkAction::get_name(&self) -> &str; alias getName;
 });
 
 foreign_callback!(callback ActionCallback {

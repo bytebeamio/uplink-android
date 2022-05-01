@@ -72,7 +72,8 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
         // Print to log received action
         String actionId = action.getId();
         String payload = action.getPayload();
-        Log.i("Uplink Recv", "id: " + actionId + "; payload: " + payload);
+        String actionName = action.getName();
+        Log.i("Uplink Recv", "id: " + actionId + "name: " + actionName + "; payload: " + payload);
 
         Executor executor = Executors.newSingleThreadExecutor();
 

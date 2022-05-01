@@ -137,6 +137,10 @@ impl UplinkAction {
     pub fn get_payload(&self) -> &str {
         &self.inner.payload
     }
+
+    pub fn get_name(&self) -> &str {
+        &self.inner.name
+    }
 }
 
 pub struct Uplink {

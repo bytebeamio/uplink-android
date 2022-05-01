@@ -68,7 +68,7 @@ archTriplets.each { arch, target ->
     // Build with cargo
     tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
         workingDir rustBasePath
-        commandLine 'cargo', 'build', "--target=${target}", "--release"
+        commandLine 'cross', 'build', "--target=${target}", "--release"
     }
 
     // Sync shared native dependencies
