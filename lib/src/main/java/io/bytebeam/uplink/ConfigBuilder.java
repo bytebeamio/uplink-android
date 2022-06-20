@@ -1,5 +1,7 @@
 package io.bytebeam.uplink;
 
+import io.bytebeam.uplink.generated.UplinkConfig;
+
 public class ConfigBuilder {
     private UplinkConfig config;
 

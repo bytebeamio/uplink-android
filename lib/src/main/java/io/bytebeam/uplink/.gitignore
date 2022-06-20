@@ -1,3 +1,1 @@
-*.java
-
-!ConfigBuilder.java
+generated/*.java

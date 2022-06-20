@@ -13,8 +13,9 @@ fn main() {
             .join("java")
             .join("io")
             .join("bytebeam")
-            .join("uplink"),
-        "io.bytebeam.uplink".into(),
+            .join("uplink")
+            .join("generated"),
+        "io.bytebeam.uplink.generated".into(),
     )))
     .rustfmt_bindings(true);
 
