@@ -4,16 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-android_logger = "0.10"
 figment = { version = "0.10.6", features = ["toml", "json"] }
 flume = "0.10.9"
+jni = "0.19.0"
 jni-sys = "0.3"
+anyhow = "1.0.58"
 log = "0.4"
 log-panics = "2.0"
-serde_json = "1.0"
+lazy_static = "1.4.0"
 tokio = { version = "1", features = ["full"] }
-uplink = { git = "https://github.com/bytebeamio/uplink" }
-buildstructor = "0.3.2"
+#uplink = { git = "https://github.com/bytebeamio/uplink" }
+uplink = { path = "../uplink/uplink" }
 
 [lib]
 name = "uplink_android"
