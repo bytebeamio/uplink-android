@@ -63,7 +63,6 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
     let mut bridge = AndroidBridge::new(
         config.clone(),
         uplink.bridge_action_rx(),
-        uplink.action_status(),
         Box::new(move |action| {
             // create java object from Action
             let env = jvm.attach_current_thread().unwrap();
