@@ -13,8 +13,7 @@ log = "0.4"
 log-panics = "2.0"
 lazy_static = "1.4.0"
 tokio = { version = "1", features = ["full"] }
-#uplink = { git = "https://github.com/bytebeamio/uplink" }
-uplink = { path = "../uplink/uplink" }
+uplink = { git = "https://github.com/bmcpt/uplink", branch = "android_adjustments" }
 
 [lib]
 name = "uplink_android"
@@ -22,3 +21,9 @@ crate-type = ["lib", "cdylib"]
 
 [build-dependencies]
 flapigen = "0.6.0-pre7"
+
+[profile.dev]
+opt-level = 1
+debug = false
+strip = true
+panic = "unwind"

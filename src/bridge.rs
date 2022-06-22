@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time;
 use std::time::Duration;
-use flume::Receiver;
+use flume::{Receiver, Sender};
 use anyhow::Error;
+use jni::{JavaVM, JNIEnv};
+use jni::objects::{JClass, JObject};
+use jni_sys::jobject;
 use log::error;
 use tokio::select;
 use tokio::time::Instant;
-use uplink::{Action, ActionResponse, Config, Stream};
+use uplink::{Action, ActionResponse, Config, Package, Stream};
 
 pub struct AndroidBridge {
     config: Arc<Config>,
@@ -16,6 +18,8 @@ pub struct AndroidBridge {
     action_status: Stream<ActionResponse>,
     action_sink: Box<dyn Fn(Action) -> ()>,
 }
+
+unsafe impl Send for AndroidBridge {}
 
 impl AndroidBridge {
     pub fn new(
@@ -40,16 +44,8 @@ impl AndroidBridge {
     pub async fn collect(
         &mut self,
     ) -> Result<(), Error> {
-        let mut bridge_partitions = HashMap::new();
-        for (stream, config) in self.config.streams.clone() {
-            bridge_partitions.insert(
-                stream.clone(),
-                Stream::new(stream, config.topic, config.buf_size, self.data_tx.clone()),
-            );
-        }
-
         let mut action_status = self.action_status.clone();
-        let action_timeout = time::sleep(Duration::from_secs(10));
+        let action_timeout = tokio::time::sleep(Duration::from_secs(10));
 
         tokio::pin!(action_timeout);
         loop {
@@ -60,7 +56,7 @@ impl AndroidBridge {
 
                     action_timeout.as_mut().reset(Instant::now() + Duration::from_secs(10));
 
-                    self.action_sink.call(action);
+                    (self.action_sink)(action);
                 }
 
                 _ = &mut action_timeout, if self.current_action.is_some() => {

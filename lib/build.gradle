@@ -45,10 +45,10 @@ dependencies {
 
 def rustBasePath = ".."
 def archTriplets = [
-        'armeabi-v7a': 'armv7-linux-androideabi',
-        'arm64-v8a': 'aarch64-linux-android',
+//        'armeabi-v7a': 'armv7-linux-androideabi',
+//        'arm64-v8a': 'aarch64-linux-android',
         'x86': 'i686-linux-android',
-        'x86_64': 'x86_64-linux-android',
+//        'x86_64': 'x86_64-linux-android',
 ]
 
 // TODO: only pass --release if buildType is release
@@ -72,7 +72,7 @@ archTriplets.each { arch, target ->
     // Build with cargo
     tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
         workingDir rustBasePath
-        commandLine 'cross', 'build', "--target=${target}", "--release"
+        commandLine 'cross', 'build', "--target=${target}"
     }
 
     // Sync shared native dependencies
@@ -84,7 +84,7 @@ archTriplets.each { arch, target ->
 
     // Copy build libs into this module's libs directory
     tasks.create(name: "rust-deploy-${arch}", type: Copy, dependsOn: "sync-rust-deps-${arch}", description: "Copy rust libs for (${arch}) to jniLibs") {
-        from "${project.ext.cargo_target_directory}/${target}/release"
+        from "${project.ext.cargo_target_directory}/${target}/debug"
         include "*.so"
         into "src/main/jniLibs/${arch}"
     }
