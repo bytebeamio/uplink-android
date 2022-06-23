@@ -35,7 +35,7 @@ impl FromJava<Self> for Payload {
         Payload {
             stream: call_string_getter(env, obj, "getStream").unwrap(),
             sequence: call_int_getter(env, obj, "getSequence").unwrap(),
-            timestamp: call_long_getter(env, obj, "getStream").unwrap(),
+            timestamp: call_long_getter(env, obj, "getTimestamp").unwrap(),
             payload,
         }
     }

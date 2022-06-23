@@ -19,6 +19,8 @@ fun Resources.getRawTextFile(@RawRes id: Int) =
 const val TAG = "==APP=="
 
 class MainActivity : AppCompatActivity(), ActionSubscriber {
+    var idx: Int = 1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -31,7 +33,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
             this
         )
         findViewById<Button>(R.id.send_btn).setOnClickListener {
-            NativeApi.sendData(uplink, UplinkPayload("metrics", 0, Date().time, "{}"))
+            NativeApi.sendData(uplink, UplinkPayload("metrics", idx++, Date().time, "{}"))
         }
         findViewById<TextView>(R.id.dbg).text = "test"
     }
