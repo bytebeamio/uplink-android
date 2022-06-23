@@ -47,11 +47,14 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
     );
     log_panics::init();
 
-    let java_api = env.new_global_ref(env.get_static_field(
-        "io/bytebeam/uplink/JavaApi",
-        "INSTANCE",
-        "Lio/bytebeam/uplink/JavaApi;",
-    ).unwrap().l().unwrap()).unwrap();
+    let java_api = env.new_global_ref(
+        env.get_static_field(
+            "io/bytebeam/uplink/JavaApi",
+            "INSTANCE",
+            "Lio/bytebeam/uplink/JavaApi;",
+        ).unwrap()
+            .l().unwrap()
+    ).unwrap();
 
     let action_callback = env.new_global_ref(action_callback).unwrap();
 
@@ -75,7 +78,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
                 let uplink_action = env.call_method(
                     java_api.as_obj(),
                     "createUplinkAction",
-                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/bytebeam/uplink/UplinkAction;",
+                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/bytebeam/uplink/types/UplinkAction;",
                     &[
                         JValue::Object(*env.new_string(&action.action_id).unwrap()),
                         JValue::Object(*env.new_string(&action.kind).unwrap()),
@@ -86,7 +89,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
                 env.call_method(
                     &action_callback,
                     "processAction",
-                    "(Lio/bytebeam/uplink/UplinkAction;)Ljava/lang/Void;",
+                    "(Lio/bytebeam/uplink/types/UplinkAction;)V",
                     &[JValue::Object(uplink_action.l().unwrap())],
                 ).unwrap();
             }),
@@ -143,13 +146,13 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_sendData(
                 payload.stream.clone(),
                 Stream::dynamic(&payload.stream, &context.config.project_id, &context.config.device_id, context.uplink.bridge_data_tx()),
             ).unwrap();
+            context.bridge_partitions.get_mut(&payload.stream).unwrap()
         }
     };
 
     if let Err(e) = partition.push(payload) {
         error!("Failed to send data. Error = {:?}", e.to_string());
     }
-
 }
 
 #[no_mangle]

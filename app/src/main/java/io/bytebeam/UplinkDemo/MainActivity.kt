@@ -3,15 +3,14 @@ package io.bytebeam.UplinkDemo
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.ActionSubscriber
 import io.bytebeam.uplink.NativeApi
-import io.bytebeam.uplink.UplinkAction
-import io.bytebeam.uplink.UplinkPayload
+import io.bytebeam.uplink.types.UplinkAction
+import io.bytebeam.uplink.types.UplinkPayload
 import java.util.Date
 
 fun Resources.getRawTextFile(@RawRes id: Int) =
@@ -37,9 +36,8 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
         findViewById<TextView>(R.id.dbg).text = "test"
     }
 
-    override fun processAction(action: UplinkAction): Void? {
+    override fun processAction(action: UplinkAction) {
         Log.e(TAG, action.toString())
-        return null
     }
 
     //    @Override
