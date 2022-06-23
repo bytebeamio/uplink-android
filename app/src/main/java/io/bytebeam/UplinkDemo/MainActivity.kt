@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
             this
         )
         findViewById<Button>(R.id.send_btn).setOnClickListener {
+            Log.e(TAG, idx.toString())
             NativeApi.sendData(uplink, UplinkPayload("metrics", idx++, Date().time, "{}"))
         }
         findViewById<TextView>(R.id.dbg).text = "test"
