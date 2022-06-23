@@ -402,7 +402,7 @@ dependencies = [
 [[package]]
 name = "disk"
 version = "0.1.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#30ea4fd02b8c03ab53d4b9fab544e9ac02eed0e4"
+source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#9eb37c66ed82c9cf06b0515946e8af338b8dfc5a"
 dependencies = [
  "bytes 1.1.0",
  "log",
@@ -2555,7 +2555,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 [[package]]
 name = "uplink"
 version = "1.2.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#30ea4fd02b8c03ab53d4b9fab544e9ac02eed0e4"
+source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#9eb37c66ed82c9cf06b0515946e8af338b8dfc5a"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",
@@ -2594,6 +2594,7 @@ dependencies = [
  "lazy_static",
  "log",
  "log-panics",
+ "serde_json",
  "tokio 1.19.2",
  "uplink",
 ]

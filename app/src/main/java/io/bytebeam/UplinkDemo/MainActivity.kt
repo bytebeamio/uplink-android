@@ -4,12 +4,15 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.ActionSubscriber
 import io.bytebeam.uplink.NativeApi
 import io.bytebeam.uplink.UplinkAction
+import io.bytebeam.uplink.UplinkPayload
+import java.util.Date
 
 fun Resources.getRawTextFile(@RawRes id: Int) =
     openRawResource(id).bufferedReader().use { it.readText() }
@@ -28,6 +31,9 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
             """.trimIndent(),
             this
         )
+        findViewById<Button>(R.id.send_btn).setOnClickListener {
+            NativeApi.sendData(uplink, UplinkPayload("metrics", 0, Date().time, "{}"))
+        }
         findViewById<TextView>(R.id.dbg).text = "test"
     }
 

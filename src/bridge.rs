@@ -1,15 +1,8 @@
-use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
-use flume::{Receiver, Sender};
+use flume::Receiver;
 use anyhow::Error;
-use jni::{JavaVM, JNIEnv};
-use jni::objects::{JClass, JObject};
-use jni_sys::jobject;
 use log::error;
-use tokio::select;
-use tokio::time::Instant;
-use uplink::{Action, ActionResponse, Config, Package, Stream};
+use uplink::{Action, Config};
 
 pub struct AndroidBridge {
     config: Arc<Config>,
@@ -41,16 +34,10 @@ impl AndroidBridge {
         &mut self,
     ) -> Result<(), Error> {
         loop {
-            select! {
-                action = self.actions_rx.recv_async() => {
-                    let action = action?;
-                    self.current_action = Some(action.action_id.to_owned());
+            let action = self.actions_rx.recv_async().await?;
+            self.current_action = Some(action.action_id.to_owned());
 
-                    action_timeout.as_mut().reset(Instant::now() + Duration::from_secs(10));
-
-                    (self.action_sink)(action);
-                }
-            }
+            (self.action_sink)(action);
         }
     }
 }

@@ -18,11 +18,11 @@ data class UplinkActionResponse(
     val timestamp: Long,
     val state: String,
     val progress: Int,
-    val errors: List<String>,
+    val errors: Array<String>,
 ): Parcelable
 
 @Parcelize
-data class UplinkPayload(
+data class  UplinkPayload(
     val stream: String,
     val sequence: Int,
     val timestamp: Long,
