@@ -57,6 +57,7 @@ impl FromJava<Self> for ActionResponse {
                     .unwrap()
             );
         }
+
         ActionResponse {
             id: call_string_getter(env, obj, "getId").unwrap(),
             sequence: call_int_getter(env, obj, "getSequence").unwrap(),
@@ -65,5 +66,33 @@ impl FromJava<Self> for ActionResponse {
             progress: call_int_getter(env, obj, "getProgress").unwrap() as _,
             errors,
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ActionResponsePayload {
+    pub id: String,
+    pub status: String,
+    pub progress: u8,
+    pub errors: Vec<String>,
+}
+
+impl ActionResponsePayload {
+    pub fn from_action_response(response: &ActionResponse) -> Self {
+        ActionResponsePayload {
+            id: response.id.clone(),
+            status: response.state.clone(),
+            progress: response.progress,
+            errors: response.errors.clone(),
+        }
+    }
+}
+
+pub fn action_response_to_payload(response: ActionResponse) -> Payload {
+    Payload {
+        stream: "action_status".to_owned(),
+        sequence: response.sequence,
+        timestamp: response.timestamp,
+        payload: serde_json::to_value(ActionResponsePayload::from_action_response(&response)).unwrap(),
     }
 }
