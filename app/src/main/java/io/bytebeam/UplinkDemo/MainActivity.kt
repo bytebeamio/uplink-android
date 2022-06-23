@@ -9,9 +9,11 @@ import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.ActionSubscriber
 import io.bytebeam.uplink.NativeApi
+import io.bytebeam.uplink.types.ActionResponse
 import io.bytebeam.uplink.types.UplinkAction
 import io.bytebeam.uplink.types.UplinkPayload
 import java.util.Date
+import java.util.concurrent.Executors
 
 fun Resources.getRawTextFile(@RawRes id: Int) =
     openRawResource(id).bufferedReader().use { it.readText() }
@@ -19,12 +21,12 @@ fun Resources.getRawTextFile(@RawRes id: Int) =
 const val TAG = "==APP=="
 
 class MainActivity : AppCompatActivity(), ActionSubscriber {
-    var idx: Int = 1
+    var uplink: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val uplink = NativeApi.createUplink(
+        uplink = NativeApi.createUplink(
             resources.getRawTextFile(R.raw.device_1160),
             """
                 [persistence]
@@ -32,15 +34,29 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
             """.trimIndent(),
             this
         )
-        findViewById<Button>(R.id.send_btn).setOnClickListener {
-            Log.e(TAG, idx.toString())
-            NativeApi.sendData(uplink, UplinkPayload("metrics", idx++, Date().time, "{}"))
-        }
-        findViewById<TextView>(R.id.dbg).text = "test"
+        findViewById<TextView>(R.id.dbg).text = "running"
     }
 
     override fun processAction(action: UplinkAction) {
-        Log.e(TAG, action.toString())
+        Log.e(TAG, "received action: $action")
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            for (i in 1..10) {
+                Log.e(TAG, "sending response: $i")
+                NativeApi.respond(
+                    uplink,
+                    ActionResponse(
+                        action.id,
+                        0,
+                        System.currentTimeMillis(),
+                        if (i == 10) { "done" } else { "processing" },
+                        i * 10,
+                        arrayOf()
+                    )
+                )
+                Thread.sleep(1000)
+            }
+        }
     }
 
     //    @Override

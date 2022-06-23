@@ -1,5 +1,6 @@
 package io.bytebeam.uplink;
 
+import io.bytebeam.uplink.types.ActionResponse;
 import io.bytebeam.uplink.types.UplinkPayload;
 
 public class NativeApi {
@@ -16,4 +17,6 @@ public class NativeApi {
     public static native void destroyUplink(long uplink);
 
     public static native void sendData(long uplink, UplinkPayload payload);
+
+    public static native void respond(long uplink, ActionResponse response);
 }
