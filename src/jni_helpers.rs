@@ -69,7 +69,7 @@ impl FromJava<Self> for ActionResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ActionResponsePayload {
     pub id: String,
     pub status: String,

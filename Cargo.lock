@@ -2594,6 +2594,7 @@ dependencies = [
  "lazy_static",
  "log",
  "log-panics",
+ "serde",
  "serde_json",
  "tokio 1.19.2",
  "uplink",

@@ -8,7 +8,7 @@ import android.os.Message
 import android.os.Messenger
 
 class UplinkService: Service() {
-    //    // forward events to these subscribers
+//    // forward events to these subscribers
 //    val subscribers = mutableListOf<Messenger>()
 //
 //    lateinit var uplink: Uplink
