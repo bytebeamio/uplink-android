@@ -85,7 +85,9 @@ public class UplinkService extends Service {
             m.setData(b);
             try {
                 subscriber.send(m);
-            } catch (RemoteException e) {}
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
