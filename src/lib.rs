@@ -97,7 +97,6 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
             config.clone(),
             uplink.bridge_action_rx(),
             Box::new(move |action| {
-                // create java object from Action
                 let env = jvm.attach_current_thread().unwrap();
                 let uplink_action = env.call_method(
                     java_api.as_obj(),
@@ -172,4 +171,12 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_respond(
     let action_response = ActionResponse::from_java(env, action_response);
 
     context.push_payload(action_response_to_payload(action_response));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_crash(
+    _: JNIEnv,
+    _: JClass,
+) {
+    panic!("Crash requested");
 }

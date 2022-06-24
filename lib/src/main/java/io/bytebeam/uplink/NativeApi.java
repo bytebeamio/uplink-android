@@ -19,4 +19,6 @@ public class NativeApi {
     public static native void sendData(long uplink, UplinkPayload payload);
 
     public static native void respond(long uplink, ActionResponse response);
+
+    public static native void crash();
 }
