@@ -152,6 +152,30 @@ struct Log {
     msg: String,
 }
 
+impl Log {
+    fn from_string(msg: String) -> Self {
+        Self {
+            level: "".to_string(),
+            msg,
+        }
+    }
+
+    fn to_payload(self, sequence: u32) -> Result<Payload, String> {
+        let payload = serde_json::to_value(self).map_err(|e| e.to_string())?;
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_millis() as u64;
+
+        Ok(Payload {
+            stream: "logs".to_string(),
+            sequence,
+            timestamp,
+            payload,
+        })
+    }
+}
+
 pub struct Uplink {
     config: Arc<Config>,
     action_stream: Stream<ActionResponse>,
@@ -274,21 +298,10 @@ impl Uplink {
             .as_mut()
             .ok_or("stdout missing".to_string())?;
         let stdout_reader = BufReader::new(stdout);
-        let stdout_lines = stdout_reader.lines();
 
-        for line in stdout_lines {
-            let log = line.map_err(|e| e.to_string())?;
-            let payload = serde_json::to_value(log).map_err(|e| e.to_string())?;
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or(Duration::from_secs(0))
-                .as_millis() as u64;
-            let data = Payload {
-                stream: "logs".to_string(),
-                sequence,
-                timestamp,
-                payload,
-            };
+        for line in stdout_reader.lines() {
+            let log = Log::from_string(line.map_err(|e| e.to_string())?);
+            let data = log.to_payload(sequence)?;
 
             log_stream.push(data).map_err(|e| e.to_string())?;
             sequence += 1;
