@@ -114,7 +114,8 @@ public class MainActivity extends AppCompatActivity implements ActionCallback {
         try {
             ConfigBuilder config = new ConfigBuilder(base)
                     .setOta(true, baseFolder + "/ota-file")
-                    .setPersistence(baseFolder + "/uplink", 104857600, 3);
+                    .setPersistence(baseFolder + "/uplink", 104857600, 3)
+                    .enableLogCollector();
 
             uplink = new Uplink(config.build());
             uplink.subscribe(this);

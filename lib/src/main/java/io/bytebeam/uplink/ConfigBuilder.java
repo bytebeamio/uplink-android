@@ -25,6 +25,11 @@ public class ConfigBuilder {
         return this;
     }
 
+    public ConfigBuilder enableLogCollector() {
+        config.enableLogCollector();
+        return this;
+    }
+
     public UplinkConfig build() {
         return config;
     }

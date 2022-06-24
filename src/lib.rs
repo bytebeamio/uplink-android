@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
-use std::process::Command;
+use std::process::{Child, Command, ExitStatus};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -64,6 +64,7 @@ unsafe impl Send for CB {}
 
 pub struct UplinkConfig {
     inner: Config,
+    enable_log_collector: bool,
 }
 
 impl UplinkConfig {
@@ -74,6 +75,7 @@ impl UplinkConfig {
                 .merge(Data::<Json>::string(&config))
                 .extract()
                 .map_err(|e| e.to_string())?,
+            enable_log_collector: false,
         })
     }
 
@@ -88,6 +90,10 @@ impl UplinkConfig {
             update_period,
             stream_size: None,
         };
+    }
+
+    pub fn enable_log_collector(&mut self) {
+        self.enable_log_collector = true;
     }
 
     // TODO: Add a method to insert `StreamConfig`s into inner.streams
@@ -195,6 +201,7 @@ impl Uplink {
         log_panics::init();
         info!("init log system - done");
 
+        let start_relay = config.enable_log_collector;
         let mut config = config.inner;
 
         if let Some(persistence) = &config.persistence {
@@ -230,13 +237,19 @@ impl Uplink {
             );
         }
 
-        Ok(Uplink {
+        let uplink = Uplink {
             config,
             action_stream: uplink.action_status(),
             bridge_rx: uplink.bridge_action_rx(),
             streams,
             data_tx: uplink.bridge_data_tx(),
-        })
+        };
+
+        if start_relay {
+            uplink.spawn_log_relay().map_err(|e| e.to_string())?;
+        }
+
+        Ok(uplink)
     }
 
     pub fn send(&mut self, payload: UplinkPayload) -> Result<(), String> {
@@ -279,38 +292,44 @@ impl Uplink {
         Ok(())
     }
 
-    pub fn relay_logs(&self) -> Result<(), String> {
-        let mut log_stream = Stream::dynamic(
+    pub fn spawn_log_relay(&self) -> Result<(), String> {
+        let log_stream = Stream::dynamic(
             "logs",
             &self.config.project_id,
             &self.config.device_id,
             self.data_tx.clone(),
         );
-        let mut sequence = 0;
 
-        let mut logcat_cmd = Command::new("logcat")
+        let logcat_cmd = Command::new("logcat")
             .args(["-v", "long"])
             .spawn()
             .map_err(|e| e.to_string())?;
 
-        let stdout = logcat_cmd
-            .stdout
-            .as_mut()
-            .ok_or("stdout missing".to_string())?;
-        let stdout_reader = BufReader::new(stdout);
-
-        for line in stdout_reader.lines() {
-            let log = Log::from_string(line.map_err(|e| e.to_string())?);
-            let data = log.to_payload(sequence)?;
-
-            log_stream.push(data).map_err(|e| e.to_string())?;
-            sequence += 1;
-        }
-
-        let _exit_status = logcat_cmd.wait().map_err(|e| e.to_string())?;
+        std::thread::spawn(move || {
+            if let Err(e) = relay_logs(logcat_cmd, log_stream) {
+                error!("Error while relaying logs: {}", e);
+            }
+        });
 
         Ok(())
     }
+}
+
+fn relay_logs(mut logcat_cmd: Child, mut log_stream: Stream<Payload>) -> Result<ExitStatus, String> {
+    let stdout = logcat_cmd
+        .stdout
+        .as_mut()
+        .ok_or("stdout missing".to_string())?;
+    let stdout_reader = BufReader::new(stdout);
+
+    for (sequence, line) in stdout_reader.lines().enumerate() {
+        let log = Log::from_string(line.map_err(|e| e.to_string())?);
+        let data = log.to_payload(sequence as u32)?;
+
+        log_stream.push(data).map_err(|e| e.to_string())?;
+    }
+
+    logcat_cmd.wait().map_err(|e| e.to_string())
 }
 
 fn subscriber(cb: CB, bridge_rx: Receiver<Action>) -> Result<(), String> {

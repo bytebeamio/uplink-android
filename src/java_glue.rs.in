@@ -7,6 +7,7 @@ foreign_class!(class UplinkConfig {
     fn UplinkConfig::set_stats(&mut self, _: bool, _: u64); alias setStats;
     fn UplinkConfig::add_to_stats(&mut self, _: String); alias addToStats;
     fn UplinkConfig::set_persistence(&mut self, _: String, _: usize, _: usize); alias setPersistence;
+    fn UplinkConfig::enable_log_collector(&mut self); alias enableLogCollector;
 
     foreign_code r#"
     static {
