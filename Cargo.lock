@@ -2768,6 +2768,7 @@ dependencies = [
  "jni-sys",
  "log",
  "log-panics",
+ "serde",
  "serde_json",
  "tokio 1.18.0",
  "uplink",

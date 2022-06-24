@@ -12,7 +12,10 @@
 )]
 
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
+use std::process::Command;
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use figment::providers::{Data, Json, Toml};
 use figment::Figment;
@@ -22,7 +25,7 @@ use log::{error, info};
 use uplink::config::{Config, Ota, Persistence, Stats};
 use uplink::{Action, ActionResponse, Package, Payload, Stream};
 
-const DEFAULT_CONFIG: &'static str = r#"
+const DEFAULT_CONFIG: &str = r#"
     bridge_port = 5555
     max_packet_size = 102400
     max_inflight = 100
@@ -143,6 +146,12 @@ impl UplinkAction {
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+struct Log {
+    level: String,
+    msg: String,
+}
+
 pub struct Uplink {
     config: Arc<Config>,
     action_stream: Stream<ActionResponse>,
@@ -242,6 +251,50 @@ impl Uplink {
                 error!("Error while handling callback: {}", e);
             }
         });
+
+        Ok(())
+    }
+
+    pub fn relay_logs(&self) -> Result<(), String> {
+        let mut log_stream = Stream::dynamic(
+            "logs",
+            &self.config.project_id,
+            &self.config.device_id,
+            self.data_tx.clone(),
+        );
+        let mut sequence = 0;
+
+        let mut logcat_cmd = Command::new("logcat")
+            .args(["-v", "long"])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+
+        let stdout = logcat_cmd
+            .stdout
+            .as_mut()
+            .ok_or("stdout missing".to_string())?;
+        let stdout_reader = BufReader::new(stdout);
+        let stdout_lines = stdout_reader.lines();
+
+        for line in stdout_lines {
+            let log = line.map_err(|e| e.to_string())?;
+            let payload = serde_json::to_value(log).map_err(|e| e.to_string())?;
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or(Duration::from_secs(0))
+                .as_millis() as u64;
+            let data = Payload {
+                stream: "logs".to_string(),
+                sequence,
+                timestamp,
+                payload,
+            };
+
+            log_stream.push(data).map_err(|e| e.to_string())?;
+            sequence += 1;
+        }
+
+        let _exit_status = logcat_cmd.wait().map_err(|e| e.to_string())?;
 
         Ok(())
     }
