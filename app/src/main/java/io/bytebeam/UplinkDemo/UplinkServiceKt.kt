@@ -2,12 +2,9 @@ package io.bytebeam.UplinkDemo
 
 import android.app.Service
 import android.content.Intent
-import android.os.Handler
 import android.os.IBinder
-import android.os.Message
-import android.os.Messenger
 
-class UplinkService: Service() {
+class UplinkServiceKt: Service() {
 //    // forward events to these subscribers
 //    val subscribers = mutableListOf<Messenger>()
 //
@@ -48,10 +45,3 @@ class UplinkService: Service() {
     }
 }
 
-const val UPLINK_CONFIG_KEY = "uplinkConfig"
-
-const val SEND_DATA = 0
-const val RESPOND_TO_ACTION = 1
-const val SUBSCRIBE = 2
-/// for testing, will trigger a segmentation fault
-const val CRASH = 3
