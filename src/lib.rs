@@ -12,10 +12,7 @@
 )]
 
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
-use std::process::{Child, Command, ExitStatus};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use figment::providers::{Data, Json, Toml};
 use figment::Figment;
@@ -24,6 +21,8 @@ use log::{error, info};
 
 use uplink::config::{Config, Ota, Persistence, Stats};
 use uplink::{Action, ActionResponse, Package, Payload, Stream};
+
+mod logcat;
 
 const DEFAULT_CONFIG: &str = r#"
     bridge_port = 5555
@@ -152,36 +151,6 @@ impl UplinkAction {
     }
 }
 
-#[derive(Debug, serde::Serialize)]
-struct Log {
-    level: String,
-    msg: String,
-}
-
-impl Log {
-    fn from_string(msg: String) -> Self {
-        Self {
-            level: "".to_string(),
-            msg,
-        }
-    }
-
-    fn to_payload(self, sequence: u32) -> Result<Payload, String> {
-        let payload = serde_json::to_value(self).map_err(|e| e.to_string())?;
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
-            .as_millis() as u64;
-
-        Ok(Payload {
-            stream: "logs".to_string(),
-            sequence,
-            timestamp,
-            payload,
-        })
-    }
-}
-
 pub struct Uplink {
     config: Arc<Config>,
     action_stream: Stream<ActionResponse>,
@@ -300,36 +269,14 @@ impl Uplink {
             self.data_tx.clone(),
         );
 
-        let logcat_cmd = Command::new("logcat")
-            .args(["-v", "long"])
-            .spawn()
-            .map_err(|e| e.to_string())?;
-
         std::thread::spawn(move || {
-            if let Err(e) = relay_logs(logcat_cmd, log_stream) {
+            if let Err(e) = logcat::relay_logs(log_stream) {
                 error!("Error while relaying logs: {}", e);
             }
         });
 
         Ok(())
     }
-}
-
-fn relay_logs(mut logcat_cmd: Child, mut log_stream: Stream<Payload>) -> Result<ExitStatus, String> {
-    let stdout = logcat_cmd
-        .stdout
-        .as_mut()
-        .ok_or("stdout missing".to_string())?;
-    let stdout_reader = BufReader::new(stdout);
-
-    for (sequence, line) in stdout_reader.lines().enumerate() {
-        let log = Log::from_string(line.map_err(|e| e.to_string())?);
-        let data = log.to_payload(sequence as u32)?;
-
-        log_stream.push(data).map_err(|e| e.to_string())?;
-    }
-
-    logcat_cmd.wait().map_err(|e| e.to_string())
 }
 
 fn subscriber(cb: CB, bridge_rx: Receiver<Action>) -> Result<(), String> {
