@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
 
         findViewById<Button>(R.id.send_btn).setOnClickListener {
             try {
-                uplink.sendData(UplinkPayload("test", 0, System.currentTimeMillis(), "{}"))
+                uplink.sendData(UplinkPayload("test", 1, System.currentTimeMillis(), "{}"))
             } catch (e: UplinkTerminatedException) {
                 Log.e(TAG, "terminated")
             }
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
                 uplink.respondToAction(
                     ActionResponse(
                         action.id,
-                        0,
+                        i+1,
                         System.currentTimeMillis(),
                         if (i == 10) { "done" } else { "processing" },
                         i * 10,

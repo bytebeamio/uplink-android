@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import io.bytebeam.uplink.NativeApi;
 import io.bytebeam.uplink.types.ActionResponse;
 import io.bytebeam.uplink.types.UplinkAction;
+import io.bytebeam.uplink.types.UplinkPayload;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +57,9 @@ public class UplinkService extends Service {
         }
         switch (message.what) {
             case SEND_DATA:
-                NativeApi.sendData(uplink, message.getData().getParcelable(DATA_KEY));
+                Bundle b = message.getData();
+                b.setClassLoader(UplinkPayload.class.getClassLoader());
+                NativeApi.sendData(uplink, b.getParcelable(DATA_KEY));
                 break;
             case SUBSCRIBE:
                 subscribers.add(message.replyTo);
@@ -77,7 +80,6 @@ public class UplinkService extends Service {
         }
         for (Messenger subscriber : subscribers) {
             Message m = new Message();
-            m.what = 0;
             Bundle b = new Bundle();
             b.putParcelable(DATA_KEY, uplinkAction);
             m.setData(b);

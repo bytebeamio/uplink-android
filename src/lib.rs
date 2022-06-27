@@ -32,7 +32,7 @@ impl UplinkAndroidContext {
                 self.bridge_partitions.insert(
                     payload.stream.clone(),
                     Stream::dynamic(&payload.stream, &self.config.project_id, &self.config.device_id, self.uplink.bridge_data_tx()),
-                ).unwrap();
+                );
                 self.bridge_partitions.get_mut(&payload.stream).unwrap()
             }
         };

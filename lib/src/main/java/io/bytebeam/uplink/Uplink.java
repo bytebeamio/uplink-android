@@ -7,6 +7,7 @@ import android.content.ServiceConnection;
 import android.os.*;
 import android.util.Log;
 import io.bytebeam.uplink.types.ActionResponse;
+import io.bytebeam.uplink.types.UplinkAction;
 import io.bytebeam.uplink.types.UplinkPayload;
 
 import static io.bytebeam.uplink.UplinkService.*;
@@ -49,7 +50,9 @@ public class Uplink implements ServiceConnection {
                 new Handler(
                         Looper.getMainLooper(),
                         (message) -> {
-                            subscriber.processAction(message.getData().getParcelable(DATA_KEY));
+                            Bundle b = message.getData();
+                            b.setClassLoader(UplinkAction.class.getClassLoader());
+                            subscriber.processAction(b.getParcelable(DATA_KEY));
                             return true;
                         }
                 )
