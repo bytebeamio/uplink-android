@@ -41,34 +41,6 @@ impl FromJava<Self> for Payload {
     }
 }
 
-impl FromJava<Self> for ActionResponse {
-    fn from_java(env: JNIEnv, obj: jobject) -> Self {
-        let errors_j = env.call_method(obj, "getErrors", "()[Ljava/lang/String;", &[])
-            .and_then(|o| o.l())
-            .unwrap();
-        let errors_ja = *errors_j as jarray;
-        let capacity = env.get_array_length(errors_ja).unwrap();
-        let mut errors = Vec::with_capacity(capacity as _);
-        for eidx in 0..capacity {
-            errors.push(
-                env.get_object_array_element(errors_ja, eidx)
-                    .and_then(|el| env.get_string(JString::from(el)))
-                    .map(|js| js.into())
-                    .unwrap()
-            );
-        }
-
-        ActionResponse {
-            id: call_string_getter(env, obj, "getId").unwrap(),
-            sequence: call_int_getter(env, obj, "getSequence").unwrap(),
-            timestamp: call_long_getter(env, obj, "getTimestamp").unwrap(),
-            state: call_string_getter(env, obj, "getState").unwrap(),
-            progress: call_int_getter(env, obj, "getProgress").unwrap() as _,
-            errors,
-        }
-    }
-}
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ActionResponsePayload {
     pub id: String,

@@ -3,13 +3,15 @@ package io.bytebeam.uplink.types;
 import android.os.Parcel;
 import android.os.Parcelable;
 import lombok.Value;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @Value
 public class ActionResponse implements Parcelable {
     String id;
     int sequence;
     long timestamp;
-    String state;
+    String status;
     int progress;
     String[] errors;
 
@@ -33,14 +35,34 @@ public class ActionResponse implements Parcelable {
     };
 
     public static ActionResponse success(String id) {
-        return new ActionResponse(id, 0, System.currentTimeMillis(), "Completed", 100, new String[] {});
+        return new ActionResponse(id, 0, System.currentTimeMillis(), "Completed", 100, new String[]{});
     }
 
     public static ActionResponse failure(String id, String... errors) {
         return new ActionResponse(id, 0, System.currentTimeMillis(), "Completed", 100, errors);
     }
 
-
+    public UplinkPayload toPayload() {
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put("id", id);
+            payload.put("status", status);
+            payload.put("progress`", progress);
+            JSONArray errorsJson = new JSONArray();
+            for (String error : errors) {
+                errorsJson.put(error);
+            }
+            payload.put("errors", errorsJson);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return new UplinkPayload(
+                "action_status",
+                sequence,
+                timestamp,
+                payload.toString()
+        );
+    }
 
     @Override
     public int describeContents() {
@@ -52,7 +74,7 @@ public class ActionResponse implements Parcelable {
         dest.writeString(id);
         dest.writeInt(sequence);
         dest.writeLong(timestamp);
-        dest.writeString(state);
+        dest.writeString(status);
         dest.writeInt(progress);
         dest.writeStringArray(errors);
     }

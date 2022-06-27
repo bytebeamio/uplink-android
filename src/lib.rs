@@ -161,19 +161,6 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_sendData(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_respond(
-    env: JNIEnv,
-    _: JClass,
-    context: jlong,
-    action_response: jobject,
-) {
-    let context = &mut *(context as *mut UplinkAndroidContext);
-    let action_response = ActionResponse::from_java(env, action_response);
-
-    context.push_payload(action_response_to_payload(action_response));
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_crash(
     _: JNIEnv,
     _: JClass,

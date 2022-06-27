@@ -58,7 +58,8 @@ public class UplinkService extends Service {
                 NativeApi.sendData(uplink, message.getData().getParcelable(DATA_KEY));
                 break;
             case RESPOND_TO_ACTION:
-                NativeApi.respond(uplink, message.getData().getParcelable(DATA_KEY));
+                ActionResponse response = message.getData().getParcelable(DATA_KEY);
+                NativeApi.sendData(uplink, response.toPayload());
                 break;
             case SUBSCRIBE:
                 subscribers.add(message.replyTo);
