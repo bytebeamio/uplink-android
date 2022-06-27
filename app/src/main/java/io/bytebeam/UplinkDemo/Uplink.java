@@ -42,7 +42,7 @@ public class Uplink implements ServiceConnection {
         );
     }
 
-    public void subscribe(ActionSubscriber subscriber) {
+    public void subscribe(ActionSubscriber subscriber) throws UplinkTerminatedException {
         stateAssertion();
         Messenger messenger = new Messenger(
                 new Handler(
@@ -77,20 +77,26 @@ public class Uplink implements ServiceConnection {
         }
     }
 
-    public void sendData(UplinkPayload payload) {
+    public void sendData(UplinkPayload payload) throws UplinkTerminatedException {
         stateAssertion();
         callMethod(SEND_DATA, payload);
     }
 
-    public void respondToAction(ActionResponse response) {
+    public void respondToAction(ActionResponse response) throws UplinkTerminatedException {
         stateAssertion();
-        callMethod(RESPOND_TO_ACTION, response);
+        callMethod(SEND_DATA, response.toPayload());
     }
 
-    public void destroy() {
+    public void dispose() throws UplinkTerminatedException {
         stateAssertion();
         context.unbindService(this);
         state = ServiceState.FINISHED;
+    }
+
+    /** To be used for testing */
+    public void crash() throws UplinkTerminatedException {
+        stateAssertion();
+        callMethod(CRASH, null);
     }
 
     @Override
@@ -105,21 +111,15 @@ public class Uplink implements ServiceConnection {
         state = ServiceState.CRASHED;
     }
 
-    private void stateAssertion() {
-        String message = null;
+    private void stateAssertion() throws UplinkTerminatedException {
         switch (state) {
             case UNINITIALIZED:
-                message = "attempt to use service before initialization is complete";
-                break;
+                throw new IllegalStateException("attempt to use service before initialization is complete");
             case CRASHED:
-                message = "uplink service process crashed";
-                break;
+                throw new UplinkTerminatedException();
             case FINISHED:
-                message = "attempt to use service after it was disposed";
-                break;
-        }
-        if (message != null) {
-            throw new IllegalStateException(message);
+                throw new IllegalStateException("attempt to use service after it was disposed");
         }
     }
 }
+

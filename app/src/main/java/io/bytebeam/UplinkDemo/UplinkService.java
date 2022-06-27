@@ -20,7 +20,6 @@ public class UplinkService extends Service {
 
     // Incoming messenger events
     public static final int SEND_DATA = 0;
-    public static final int RESPOND_TO_ACTION = 1;
     public static final int SUBSCRIBE = 2;
     /// for testing, will trigger a segmentation fault
     public static final int CRASH = 3;
@@ -56,10 +55,6 @@ public class UplinkService extends Service {
         switch (message.what) {
             case SEND_DATA:
                 NativeApi.sendData(uplink, message.getData().getParcelable(DATA_KEY));
-                break;
-            case RESPOND_TO_ACTION:
-                ActionResponse response = message.getData().getParcelable(DATA_KEY);
-                NativeApi.sendData(uplink, response.toPayload());
                 break;
             case SUBSCRIBE:
                 subscribers.add(message.replyTo);
