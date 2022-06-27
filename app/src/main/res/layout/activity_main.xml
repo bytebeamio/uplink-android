@@ -13,22 +13,5 @@
             android:layout_height="wrap_content"
             android:text="Start service"
     />
-    <Button
-            android:id="@+id/stop_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="@dimen/fab_margin"
-            android:text="Stop service"
-    />
-    <TextView
-            android:id="@+id/dbg"
-            android:layout_width="wrap_content"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginEnd="@dimen/fab_margin"
-            android:layout_marginBottom="16dp"
-            android:text="Test"
-    />
 
 </LinearLayout>

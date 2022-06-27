@@ -24,7 +24,7 @@ enum ServiceState {
 
 public class Uplink implements ServiceConnection {
     private final Context context;
-    private final ServiceReadyCallback serviceReadyCallback;
+    private final UplinkReadyCallback serviceReadyCallback;
     private Messenger serviceHandle;
     private ServiceState state = ServiceState.UNINITIALIZED;
 
@@ -39,17 +39,17 @@ public class Uplink implements ServiceConnection {
      * @param authConfig           authorization json configuration
      * @param uplinkConfig         uplink toml configuration
      * @param enableLogging        whether android logs should be reported as well
-     * @param serviceReadyCallback callback that will be invoked when the service is ready to be used
+     * @param uplinkReadyCallback callback that will be invoked when the service is ready to be used
      */
     public Uplink(
             Context context,
             String authConfig,
             String uplinkConfig,
             boolean enableLogging,
-            ServiceReadyCallback serviceReadyCallback
+            UplinkReadyCallback uplinkReadyCallback
     ) {
         this.context = context;
-        this.serviceReadyCallback = serviceReadyCallback;
+        this.serviceReadyCallback = uplinkReadyCallback;
         Intent intent = new Intent(context, UplinkService.class);
         intent.putExtra(AUTH_CONFIG_KEY, authConfig);
         intent.putExtra(UPLINK_CONFIG_KEY, uplinkConfig);
@@ -150,7 +150,7 @@ public class Uplink implements ServiceConnection {
     public void onServiceConnected(ComponentName name, IBinder service) {
         state = ServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
-        serviceReadyCallback.uplinkReady();
+        serviceReadyCallback.onUplinkReady();
     }
 
     @Override

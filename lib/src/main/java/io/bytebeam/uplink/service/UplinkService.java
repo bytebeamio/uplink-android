@@ -39,11 +39,13 @@ public class UplinkService extends Service {
                 enableLogging,
                 this::uplinkSubscription
         );
+        Log.d(TAG, "Uplink service created");
         return new Messenger(new Handler(this::handleMessage)).getBinder();
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "shutting down uplink service and process");
         subscribers.clear();
         NativeApi.destroyUplink(uplink);
         uplink = 0;
@@ -61,12 +63,16 @@ public class UplinkService extends Service {
             case SEND_DATA:
                 Bundle b = message.getData();
                 b.setClassLoader(UplinkPayload.class.getClassLoader());
-                NativeApi.sendData(uplink, b.getParcelable(DATA_KEY));
+                UplinkPayload payload = b.getParcelable(DATA_KEY);
+                Log.d(TAG, String.format("Submitting payload: %s", payload.toString()));
+                NativeApi.sendData(uplink, payload);
                 break;
             case SUBSCRIBE:
+                Log.d(TAG, "adding a subscriber");
                 subscribers.add(message.replyTo);
                 break;
             case CRASH:
+                Log.w(TAG, "crashing the uplink service");
                 NativeApi.crash();
                 break;
             default:
@@ -80,6 +86,7 @@ public class UplinkService extends Service {
             Log.e(TAG, "Action delivered to an unbound service, ignoring");
             return;
         }
+        Log.d(TAG, String.format(TAG, "Received action: %s", uplinkAction.toString()));
         for (Messenger subscriber : subscribers) {
             Message m = new Message();
             Bundle b = new Bundle();
