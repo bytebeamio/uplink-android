@@ -60,7 +60,7 @@ public class ActionResponse implements Parcelable {
                 "action_status",
                 sequence,
                 timestamp,
-                payload.toString()
+                payload
         );
     }
 

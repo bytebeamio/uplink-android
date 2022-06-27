@@ -11,6 +11,7 @@ import io.bytebeam.uplink.service.ActionSubscriber
 import io.bytebeam.uplink.types.ActionResponse
 import io.bytebeam.uplink.types.UplinkAction
 import io.bytebeam.uplink.types.UplinkPayload
+import org.json.JSONObject
 import java.util.concurrent.Executors
 
 class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscriber {
@@ -18,19 +19,21 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
     lateinit var logView: TextView
 
     var uplink: Uplink? = null;
-    var dataIndex = 0
+    var dataIndex = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_uplink)
 
         logView = findViewById(R.id.logView)
         findViewById<Button>(R.id.sendBtn).setOnClickListener {
+            val payload = JSONObject()
+            payload.put("result", dataIndex * dataIndex)
             uplink?.sendData(
                 UplinkPayload(
                     "square_stream",
                     dataIndex++,
                     System.currentTimeMillis(),
-                    (dataIndex * dataIndex).toString()
+                    payload
                 )
             )
         }
@@ -45,6 +48,10 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
             """
                 [persistence]
                 path = "${applicationInfo.dataDir}/uplink"
+                
+                [streams.square_stream]
+                topic = "/tenants/{tenant_id}/devices/{device_id}/events/square"
+                buf_size = 1
             """.trimIndent(),
             true,
             this
@@ -61,7 +68,7 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
     }
 
     override fun processAction(action: UplinkAction) {
-        log("Recieved action: $action")
+        log("Received action: $action")
         Executors.newSingleThreadExecutor().execute {
             for (i in 1..10) {
                 log("sending response: $i")

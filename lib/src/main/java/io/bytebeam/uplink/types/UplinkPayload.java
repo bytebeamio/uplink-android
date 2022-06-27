@@ -3,6 +3,8 @@ package io.bytebeam.uplink.types;
 import android.os.Parcel;
 import android.os.Parcelable;
 import lombok.Value;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 @Value
 public class UplinkPayload implements Parcelable {
@@ -11,15 +13,26 @@ public class UplinkPayload implements Parcelable {
     long timestamp;
     String payload;
 
+    public UplinkPayload(String stream, int sequence, long timestamp, JSONObject payload) {
+        this.stream = stream;
+        this.sequence = sequence;
+        this.timestamp = timestamp;
+        this.payload = payload.toString();
+    }
+
     public static final Creator<UplinkPayload> CREATOR = new Creator<UplinkPayload>() {
         @Override
         public UplinkPayload createFromParcel(Parcel in) {
-            return new UplinkPayload(
-                    in.readString(),
-                    in.readInt(),
-                    in.readLong(),
-                    in.readString()
-            );
+            try {
+                return new UplinkPayload(
+                        in.readString(),
+                        in.readInt(),
+                        in.readLong(),
+                        new JSONObject(in.readString())
+                );
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override

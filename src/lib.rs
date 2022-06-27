@@ -36,6 +36,9 @@ impl UplinkAndroidContext {
             }
         };
 
+        error!("found partition: {:?}", partition);
+        error!("payload: {:?}", payload);
+
         if let Err(e) = partition.push(payload) {
             error!("Failed to send data. Error = {:?}", e.to_string());
         }
