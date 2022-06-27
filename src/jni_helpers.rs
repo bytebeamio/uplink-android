@@ -1,9 +1,8 @@
-use std::ops::Deref;
 use jni::errors::Error;
 use jni::JNIEnv;
-use jni::objects::{JObject, JString, JValue};
-use jni_sys::{jarray, jobject};
-use uplink::{ActionResponse, Payload};
+use jni::objects::JString;
+use jni_sys::jobject;
+use uplink::Payload;
 
 pub fn call_string_getter(env: JNIEnv, obj: jobject, name: &str) -> Result<String, Error> {
     env.call_method(obj, name, "()Ljava/lang/String;", &[])
@@ -41,30 +40,3 @@ impl FromJava<Self> for Payload {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct ActionResponsePayload {
-    pub id: String,
-    pub status: String,
-    pub progress: u8,
-    pub errors: Vec<String>,
-}
-
-impl ActionResponsePayload {
-    pub fn from_action_response(response: &ActionResponse) -> Self {
-        ActionResponsePayload {
-            id: response.id.clone(),
-            status: response.state.clone(),
-            progress: response.progress,
-            errors: response.errors.clone(),
-        }
-    }
-}
-
-pub fn action_response_to_payload(response: ActionResponse) -> Payload {
-    Payload {
-        stream: "action_status".to_owned(),
-        sequence: response.sequence,
-        timestamp: response.timestamp,
-        payload: serde_json::to_value(ActionResponsePayload::from_action_response(&response)).unwrap(),
-    }
-}

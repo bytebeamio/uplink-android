@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use jni::JNIEnv;
-use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
+use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
 use log::{error, Level};
-use uplink::{ActionResponse, Config, Payload, Stream, Uplink};
+use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initalize_config;
 use crate::bridge::AndroidBridge;
-use crate::jni_helpers::{action_response_to_payload, FromJava};
+use crate::jni_helpers::{FromJava};
 
 mod bridge;
 mod jni_helpers;
@@ -15,7 +15,6 @@ mod jni_helpers;
 pub struct UplinkAndroidContext {
     config: Arc<Config>,
     uplink: Uplink,
-    java_api: GlobalRef,
     bridge_partitions: HashMap<String, Stream<Payload>>,
 }
 
@@ -62,7 +61,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     _: JClass,
     auth_config: JString,
     uplink_config: JString,
-    enable_logging: jboolean,
+    _enable_logging: jboolean,
     action_callback: JObject,
 ) -> jlong {
     android_logger::init_once(
@@ -95,7 +94,6 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     let mut bridge = {
         let java_api = java_api.clone();
         AndroidBridge::new(
-            config.clone(),
             uplink.bridge_action_rx(),
             Box::new(move |action| {
                 let env = jvm.attach_current_thread().unwrap();
@@ -134,7 +132,6 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     Box::into_raw(Box::new(UplinkAndroidContext {
         config,
         uplink,
-        java_api,
         bridge_partitions,
     })) as _
 }
