@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
         executor.execute {
             for (i in 1..10) {
                 Log.e(TAG, "sending response: $i")
-                NativeApi.respond(
+                NativeApi.sendData(
                     uplink,
                     ActionResponse(
                         action.id,
@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
                         if (i == 10) { "done" } else { "processing" },
                         i * 10,
                         arrayOf()
-                    )
+                    ).toPayload()
                 )
                 Thread.sleep(1000)
             }

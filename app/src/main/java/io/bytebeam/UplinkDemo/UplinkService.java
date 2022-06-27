@@ -42,8 +42,9 @@ public class UplinkService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        uplink = 0;
         subscribers.clear();
+        NativeApi.destroyUplink(uplink);
+        uplink = 0;
         return false;
     }
 
