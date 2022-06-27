@@ -1,4 +1,4 @@
-package io.bytebeam.UplinkDemo;
+package io.bytebeam.uplink;
 
 public interface ServiceReadyCallback {
     void ready();

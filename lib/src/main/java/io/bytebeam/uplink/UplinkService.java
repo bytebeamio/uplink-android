@@ -1,4 +1,4 @@
-package io.bytebeam.UplinkDemo;
+package io.bytebeam.uplink;
 
 import android.app.Service;
 import android.content.Intent;
@@ -30,6 +30,7 @@ public class UplinkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.e(TAG, "binding");
         String authString = intent.getStringExtra(AUTH_CONFIG_KEY);
         String configString = intent.getStringExtra(UPLINK_CONFIG_KEY);
         uplink = NativeApi.createUplink(

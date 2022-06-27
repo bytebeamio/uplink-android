@@ -83,7 +83,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
     let action_callback = env.new_global_ref(action_callback).unwrap();
 
     let config = Arc::new(initalize_config(
-        String::from(env.get_string(auth_config).unwrap()).as_str(),
+        strace!(String::from(env.get_string(auth_config).unwrap())).as_str(),
         String::from(env.get_string(uplink_config).unwrap()).as_str(),
     ).unwrap());
 

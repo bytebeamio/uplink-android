@@ -1,15 +1,15 @@
-package io.bytebeam.UplinkDemo;
+package io.bytebeam.uplink;
 
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.*;
-import io.bytebeam.uplink.ActionSubscriber;
+import android.util.Log;
 import io.bytebeam.uplink.types.ActionResponse;
 import io.bytebeam.uplink.types.UplinkPayload;
 
-import static io.bytebeam.UplinkDemo.UplinkService.*;
+import static io.bytebeam.uplink.UplinkService.*;
 
 enum ServiceState {
     UNINITIALIZED,
@@ -35,6 +35,7 @@ public class Uplink implements ServiceConnection {
         Intent intent = new Intent(context, UplinkService.class);
         intent.putExtra(AUTH_CONFIG_KEY, authConfig);
         intent.putExtra(UPLINK_CONFIG_KEY, uplinkConfig);
+        Log.e(TAG, "triggering bind");
         context.bindService(
                 intent,
                 this,
@@ -101,6 +102,7 @@ public class Uplink implements ServiceConnection {
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
+        Log.e(TAG, "bind finished");
         state = ServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
         serviceReadyCallback.ready();

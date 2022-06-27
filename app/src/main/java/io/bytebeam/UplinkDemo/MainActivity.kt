@@ -3,13 +3,17 @@ package io.bytebeam.UplinkDemo
 import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.ActionSubscriber
-import io.bytebeam.uplink.NativeApi
+import io.bytebeam.uplink.ServiceReadyCallback
+import io.bytebeam.uplink.Uplink
+import io.bytebeam.uplink.UplinkTerminatedException
 import io.bytebeam.uplink.types.ActionResponse
 import io.bytebeam.uplink.types.UplinkAction
+import io.bytebeam.uplink.types.UplinkPayload
 import java.util.concurrent.Executors
 
 fun Resources.getRawTextFile(@RawRes id: Int) =
@@ -17,20 +21,30 @@ fun Resources.getRawTextFile(@RawRes id: Int) =
 
 const val TAG = "==APP=="
 
-class MainActivity : AppCompatActivity(), ActionSubscriber {
-    var uplink: Long = 0
+class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback {
+    lateinit var uplink: Uplink
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        uplink = NativeApi.createUplink(
-            resources.getRawTextFile(R.raw.device_1160),
+
+        uplink = Uplink(
+            this,
+            resources.getRawTextFile(R.raw.local_device),
             """
                 [persistence]
                 path = "${applicationInfo.dataDir}/uplink"
             """.trimIndent(),
             this
         )
+
+        findViewById<Button>(R.id.send_btn).setOnClickListener {
+            try {
+                uplink.sendData(UplinkPayload("test", 0, System.currentTimeMillis(), "{}"))
+            } catch (e: UplinkTerminatedException) {
+                Log.e(TAG, "terminated")
+            }
+        }
     }
 
     override fun processAction(action: UplinkAction) {
@@ -39,8 +53,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
         executor.execute {
             for (i in 1..10) {
                 Log.e(TAG, "sending response: $i")
-                NativeApi.sendData(
-                    uplink,
+                uplink.respondToAction(
                     ActionResponse(
                         action.id,
                         0,
@@ -48,66 +61,15 @@ class MainActivity : AppCompatActivity(), ActionSubscriber {
                         if (i == 10) { "done" } else { "processing" },
                         i * 10,
                         arrayOf()
-                    ).toPayload()
+                    )
                 )
                 Thread.sleep(1000)
             }
         }
     }
 
-    //    @Override
-    //    public void recvdAction(UplinkAction action) {
-    //        // Print to log received action
-    //        String actionId = action.getId();
-    //        String payload = action.getPayload();
-    //        String actionName = action.getName();
-    //        Log.i("Uplink Recv", "id: " + actionId + "name: " + actionName + "; payload: " + payload);
-    //
-    //        Executor executor = Executors.newSingleThreadExecutor();
-    //
-    //        executor.execute(() -> {
-    //            // A demonstration of how apps can also pass progress, success and failure messages regarding an action in execution to the cloud
-    //            if (Integer.parseInt(actionId) % 2 == 0) {
-    //                sendResponse(ActionResponse.failure(actionId, "Action failed"));
-    //            } else {
-    //                for (int i = 0; i < 10; i++) {
-    //                    sendResponse(new ActionResponse(actionId, "Running", (short) (i * 10)));
-    //                }
-    //                sendResponse(ActionResponse.success(actionId));
-    //            }
-    //        });
-    //    }
-    //
-    //    public void sendResponse(ActionResponse actionResponse) {
-    //        // Send action responses
-    //        try {
-    //            uplink.respond(actionResponse);
-    //
-    //            Thread.sleep(1000);
-    //        } catch (Exception e) {
-    //            Log.e("Uplink Respond", e.toString());
-    //        }
-    //    }
-    //
-    //    public void initUplink() {
-    //        String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
-    //        // NOTE: base is String contents of config file
-    //        InputStream in_s = getResources().openRawResource(R.raw.device_1076);
-    //        Scanner sc = new Scanner(in_s);
-    //        StringBuilder sb = new StringBuilder();
-    //        while(sc.hasNext()){
-    //            sb.append(sc.nextLine());
-    //        }
-    //        String base = sb.toString();
-    //        try {
-    //            ConfigBuilder config = new ConfigBuilder(base)
-    //                    .setOta(true, baseFolder + "/ota-file")
-    //                    .setPersistence(baseFolder + "/uplink", 104857600, 3);
-    //
-    //            uplink = new Uplink(config.build());
-    //            uplink.subscribe(this);
-    //        } catch (Exception e) {
-    //            Log.e("Couldn't start uplink", e.toString());
-    //        }
-    //    }
+    override fun ready() {
+        uplink.subscribe(this);
+    }
+
 }

@@ -30,7 +30,7 @@
             </intent-filter>
         </activity>
         <service
-                android:name=".UplinkService"
+                android:name="io.bytebeam.uplink.UplinkService"
                 android:exported="false"
                 android:process=":uplink_service"
                 android:enabled="true"
