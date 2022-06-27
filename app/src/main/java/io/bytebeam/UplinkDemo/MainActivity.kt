@@ -27,32 +27,30 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        findViewById<Button>(R.id.send_btn).setOnClickListener {
+        findViewById<Button>(R.id.start_btn).setOnClickListener {
             try {
-                uplink?.sendData(UplinkPayload("test", 1, System.currentTimeMillis(), "{}"))
+                uplink = Uplink(
+                    this,
+                    resources.getRawTextFile(R.raw.local_device),
+                    """
+                        [persistence]
+                        path = "${applicationInfo.dataDir}/uplink"
+                    """.trimIndent(),
+                    this
+                )
             } catch (e: UplinkTerminatedException) {
-                Log.e(TAG, "terminated")
+                Log.e(TAG, "$e")
             }
         }
-    }
 
-    override fun onStart() {
-        super.onStart()
-        uplink = Uplink(
-            this,
-            resources.getRawTextFile(R.raw.local_device),
-            """
-                [persistence]
-                path = "${applicationInfo.dataDir}/uplink"
-            """.trimIndent(),
-            this
-        )
-    }
-
-    override fun onStop() {
-        uplink!!.dispose()
-        uplink = null
-        super.onStop()
+        findViewById<Button>(R.id.stop_btn).setOnClickListener {
+            try {
+                uplink?.dispose()
+                uplink = null
+            } catch (e: UplinkTerminatedException) {
+                Log.e(TAG, "$e")
+            }
+        }
     }
 
     override fun processAction(action: UplinkAction) {
@@ -64,9 +62,13 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
                 uplink?.respondToAction(
                     ActionResponse(
                         action.id,
-                        i+1,
+                        i + 1,
                         System.currentTimeMillis(),
-                        if (i == 10) { "done" } else { "processing" },
+                        if (i == 10) {
+                            "done"
+                        } else {
+                            "processing"
+                        },
                         i * 10,
                         arrayOf()
                     )
