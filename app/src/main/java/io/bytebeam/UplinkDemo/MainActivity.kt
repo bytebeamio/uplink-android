@@ -4,7 +4,6 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
-import android.widget.TextView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.ActionSubscriber
@@ -22,12 +21,23 @@ fun Resources.getRawTextFile(@RawRes id: Int) =
 const val TAG = "==APP=="
 
 class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback {
-    lateinit var uplink: Uplink
+    var uplink: Uplink? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        findViewById<Button>(R.id.send_btn).setOnClickListener {
+            try {
+                uplink?.sendData(UplinkPayload("test", 1, System.currentTimeMillis(), "{}"))
+            } catch (e: UplinkTerminatedException) {
+                Log.e(TAG, "terminated")
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
         uplink = Uplink(
             this,
             resources.getRawTextFile(R.raw.local_device),
@@ -37,14 +47,12 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
             """.trimIndent(),
             this
         )
+    }
 
-        findViewById<Button>(R.id.send_btn).setOnClickListener {
-            try {
-                uplink.sendData(UplinkPayload("test", 1, System.currentTimeMillis(), "{}"))
-            } catch (e: UplinkTerminatedException) {
-                Log.e(TAG, "terminated")
-            }
-        }
+    override fun onStop() {
+        uplink!!.dispose()
+        uplink = null
+        super.onStop()
     }
 
     override fun processAction(action: UplinkAction) {
@@ -53,7 +61,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
         executor.execute {
             for (i in 1..10) {
                 Log.e(TAG, "sending response: $i")
-                uplink.respondToAction(
+                uplink?.respondToAction(
                     ActionResponse(
                         action.id,
                         i+1,
@@ -68,8 +76,8 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
         }
     }
 
-    override fun ready() {
-        uplink.subscribe(this);
+    override fun uplinkReady() {
+        uplink?.subscribe(this);
     }
 
 }

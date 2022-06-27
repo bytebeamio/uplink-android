@@ -24,6 +24,9 @@ public class Uplink implements ServiceConnection {
     private final ServiceReadyCallback serviceReadyCallback;
     private Messenger serviceHandle;
     private ServiceState state = ServiceState.UNINITIALIZED;
+    public ServiceState getState() {
+        return state;
+    }
 
     public Uplink(
             Context context,
@@ -40,7 +43,7 @@ public class Uplink implements ServiceConnection {
         context.bindService(
                 intent,
                 this,
-                Context.BIND_AUTO_CREATE
+                Context.BIND_AUTO_CREATE | Context.BIND_DEBUG_UNBIND
         );
     }
 
@@ -68,7 +71,7 @@ public class Uplink implements ServiceConnection {
         }
     }
 
-    public void callMethod(int method, Parcelable arg) {
+    private void callMethod(int method, Parcelable arg) {
         Message call = new Message();
         call.what = method;
         Bundle b = new Bundle();
@@ -92,6 +95,7 @@ public class Uplink implements ServiceConnection {
     }
 
     public void dispose() throws UplinkTerminatedException {
+        Log.e(TAG, "disposing uplink");
         stateAssertion();
         context.unbindService(this);
         state = ServiceState.FINISHED;
@@ -108,12 +112,14 @@ public class Uplink implements ServiceConnection {
         Log.e(TAG, "bind finished");
         state = ServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
-        serviceReadyCallback.ready();
+        serviceReadyCallback.uplinkReady();
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        state = ServiceState.CRASHED;
+        if (state != ServiceState.FINISHED) {
+           state = ServiceState.CRASHED;
+        }
     }
 
     private void stateAssertion() throws UplinkTerminatedException {

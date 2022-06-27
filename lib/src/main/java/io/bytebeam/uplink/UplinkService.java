@@ -47,6 +47,8 @@ public class UplinkService extends Service {
         subscribers.clear();
         NativeApi.destroyUplink(uplink);
         uplink = 0;
+        // forcefully kill the service process to allow the cleanup of the native resources
+        Runtime.getRuntime().exit(0);
         return false;
     }
 
