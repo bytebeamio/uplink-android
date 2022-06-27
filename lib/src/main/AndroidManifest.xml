@@ -8,7 +8,7 @@
 
     <application>
         <service
-                android:name="io.bytebeam.uplink.UplinkService"
+                android:name="io.bytebeam.uplink.service.UplinkService"
                 android:exported="false"
                 android:process=":uplink_service"
                 android:enabled="true"/>

@@ -6,13 +6,12 @@ import android.util.Log
 import android.widget.Button
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
-import io.bytebeam.uplink.ActionSubscriber
+import io.bytebeam.uplink.service.ActionSubscriber
 import io.bytebeam.uplink.ServiceReadyCallback
 import io.bytebeam.uplink.Uplink
-import io.bytebeam.uplink.UplinkTerminatedException
+import io.bytebeam.uplink.service.UplinkTerminatedException
 import io.bytebeam.uplink.types.ActionResponse
 import io.bytebeam.uplink.types.UplinkAction
-import io.bytebeam.uplink.types.UplinkPayload
 import java.util.concurrent.Executors
 
 fun Resources.getRawTextFile(@RawRes id: Int) =
@@ -36,6 +35,7 @@ class MainActivity : AppCompatActivity(), ActionSubscriber, ServiceReadyCallback
                         [persistence]
                         path = "${applicationInfo.dataDir}/uplink"
                     """.trimIndent(),
+                    true,
                     this
                 )
             } catch (e: UplinkTerminatedException) {

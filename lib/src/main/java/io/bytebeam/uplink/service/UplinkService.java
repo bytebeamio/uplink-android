@@ -1,12 +1,10 @@
-package io.bytebeam.uplink;
+package io.bytebeam.uplink.service;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.*;
 import android.util.Log;
 import androidx.annotation.Nullable;
-import io.bytebeam.uplink.NativeApi;
-import io.bytebeam.uplink.types.ActionResponse;
 import io.bytebeam.uplink.types.UplinkAction;
 import io.bytebeam.uplink.types.UplinkPayload;
 
@@ -17,6 +15,7 @@ public class UplinkService extends Service {
     public static String TAG = "UplinkService";
     public static String AUTH_CONFIG_KEY = "authConfig";
     public static String UPLINK_CONFIG_KEY = "uplinkConfig";
+    public static String ENABLE_LOGGING_KEY = "enableLogging";
     public static String DATA_KEY = "parcelData";
 
     // Incoming messenger events
@@ -31,12 +30,13 @@ public class UplinkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.e(TAG, "binding");
         String authString = intent.getStringExtra(AUTH_CONFIG_KEY);
         String configString = intent.getStringExtra(UPLINK_CONFIG_KEY);
+        boolean enableLogging = intent.getBooleanExtra(ENABLE_LOGGING_KEY, false);
         uplink = NativeApi.createUplink(
                 authString,
                 configString,
+                enableLogging,
                 this::uplinkSubscription
         );
         return new Messenger(new Handler(this::handleMessage)).getBinder();

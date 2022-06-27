@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
-use jni_sys::{jlong, jobject};
+use jni_sys::{jboolean, jlong, jobject};
 use log::{error, Level};
 use uplink::{ActionResponse, Config, Payload, Stream, Uplink};
 use uplink::config::initalize_config;
@@ -57,11 +57,12 @@ macro_rules! strace {
 }
 
 #[no_mangle]
-pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
+pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     env: JNIEnv,
     _: JClass,
     auth_config: JString,
     uplink_config: JString,
+    enable_logging: jboolean,
     action_callback: JObject,
 ) -> jlong {
     android_logger::init_once(
@@ -72,9 +73,9 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
     log_panics::init();
 
     let java_api = env.get_static_field(
-        "io/bytebeam/uplink/JavaApi",
+        "io/bytebeam/uplink/service/JavaApi",
         "INSTANCE",
-        "Lio/bytebeam/uplink/JavaApi;",
+        "Lio/bytebeam/uplink/service/JavaApi;",
     )
         .and_then(|f| f.l())
         .and_then(|l| env.new_global_ref(l))
@@ -139,7 +140,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_NativeApi_createUplink(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_destroyUplink(
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_destroyUplink(
     _: JNIEnv,
     _: JClass,
     context: jlong,
@@ -148,7 +149,7 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_destroyUplink(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_sendData(
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_sendData(
     env: JNIEnv,
     _: JClass,
     context: jlong,
@@ -161,7 +162,7 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_sendData(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_bytebeam_uplink_NativeApi_crash(
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_crash(
     _: JNIEnv,
     _: JClass,
 ) {

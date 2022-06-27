@@ -1,6 +1,5 @@
-package io.bytebeam.uplink;
+package io.bytebeam.uplink.service;
 
-import io.bytebeam.uplink.types.ActionResponse;
 import io.bytebeam.uplink.types.UplinkPayload;
 
 public class NativeApi {
@@ -11,6 +10,7 @@ public class NativeApi {
     public static native long createUplink(
             String authConfig,
             String uplinkConfig,
+            boolean enableLogging,
             ActionSubscriber actionCallback
     );
 

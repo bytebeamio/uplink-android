@@ -1,4 +1,4 @@
-package io.bytebeam.uplink;
+package io.bytebeam.uplink.service;
 
 import io.bytebeam.uplink.types.UplinkAction;
 
