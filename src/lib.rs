@@ -14,6 +14,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use action_handler::ActionCallback;
 use figment::providers::{Data, Json, Toml};
 use figment::Figment;
 use flume::{Receiver, Sender};
@@ -22,6 +23,9 @@ use log::{error, info};
 use uplink::config::{Config, Ota, Persistence, Stats};
 use uplink::{Action, ActionResponse, Package, Payload, Stream};
 
+use crate::action_handler::ActionHandler;
+
+mod action_handler;
 mod logcat;
 
 const DEFAULT_CONFIG: &str = r#"
@@ -53,14 +57,6 @@ const DEFAULT_CONFIG: &str = r#"
     update_period = 5
 "#;
 
-pub trait ActionCallback {
-    fn recvd_action(&self, action: UplinkAction);
-}
-
-struct CB(pub Box<dyn ActionCallback>);
-
-unsafe impl Send for CB {}
-
 pub struct UplinkConfig {
     inner: Config,
     enable_log_collector: bool,
@@ -70,7 +66,7 @@ impl UplinkConfig {
     pub fn new(config: String) -> Result<UplinkConfig, String> {
         Ok(UplinkConfig {
             inner: Figment::new()
-                .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
+                .merge(Data::<Toml>::string(DEFAULT_CONFIG))
                 .merge(Data::<Json>::string(&config))
                 .extract()
                 .map_err(|e| e.to_string())?,
@@ -155,7 +151,7 @@ pub struct Uplink {
     config: Arc<Config>,
     action_stream: Stream<ActionResponse>,
     streams: HashMap<String, Stream<Payload>>,
-    bridge_rx: Receiver<Action>,
+    actions_rx: Receiver<Action>,
     data_tx: Sender<Box<dyn Package>>,
 }
 
@@ -170,7 +166,7 @@ impl Uplink {
         log_panics::init();
         info!("init log system - done");
 
-        let start_relay = config.enable_log_collector;
+        let enable_log_collector = config.enable_log_collector;
         let mut config = config.inner;
 
         if let Some(persistence) = &config.persistence {
@@ -194,6 +190,18 @@ impl Uplink {
 
         let mut streams = HashMap::new();
 
+        let (action_handler, actions_rx) = ActionHandler::new(
+            uplink.bridge_action_rx(),
+            uplink.bridge_data_tx(),
+            uplink.action_status(),
+            enable_log_collector,
+        );
+        std::thread::spawn(move || {
+            if let Err(e) = action_handler.start() {
+                error!("Error handling actions: {}", e)
+            }
+        });
+
         for (stream, cfg) in config.streams.iter() {
             streams.insert(
                 stream.to_owned(),
@@ -209,14 +217,10 @@ impl Uplink {
         let uplink = Uplink {
             config,
             action_stream: uplink.action_status(),
-            bridge_rx: uplink.bridge_action_rx(),
+            actions_rx,
             streams,
             data_tx: uplink.bridge_data_tx(),
         };
-
-        if start_relay {
-            uplink.spawn_log_relay().map_err(|e| e.to_string())?;
-        }
 
         Ok(uplink)
     }
@@ -251,7 +255,7 @@ impl Uplink {
 
     pub fn subscribe(&mut self, cb: Box<dyn ActionCallback>) -> Result<(), String> {
         let cb = CB(cb);
-        let bridge_rx = self.bridge_rx.clone();
+        let bridge_rx = self.actions_rx.clone();
         std::thread::spawn(move || {
             if let Err(e) = subscriber(cb, bridge_rx) {
                 error!("Error while handling callback: {}", e);
@@ -260,24 +264,11 @@ impl Uplink {
 
         Ok(())
     }
-
-    pub fn spawn_log_relay(&self) -> Result<(), String> {
-        let log_stream = Stream::dynamic(
-            "logs",
-            &self.config.project_id,
-            &self.config.device_id,
-            self.data_tx.clone(),
-        );
-
-        std::thread::spawn(move || {
-            if let Err(e) = logcat::relay_logs(log_stream) {
-                error!("Error while relaying logs: {}", e);
-            }
-        });
-
-        Ok(())
-    }
 }
+
+struct CB(pub Box<dyn ActionCallback>);
+
+unsafe impl Send for CB {}
 
 fn subscriber(cb: CB, bridge_rx: Receiver<Action>) -> Result<(), String> {
     loop {

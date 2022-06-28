@@ -2770,6 +2770,7 @@ dependencies = [
  "log-panics",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio 1.18.0",
  "uplink",
 ]

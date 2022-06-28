@@ -13,6 +13,7 @@ log-panics = "2.0"
 serde_json = "1.0"
 serde = "1"
 tokio = { version = "1", features = ["full"] }
+thiserror = "1"
 uplink = { git = "https://github.com/bytebeamio/uplink" }
 
 [lib]
