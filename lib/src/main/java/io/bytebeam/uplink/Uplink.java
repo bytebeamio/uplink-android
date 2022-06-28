@@ -15,20 +15,13 @@ import io.bytebeam.uplink.types.UplinkPayload;
 
 import static io.bytebeam.uplink.service.UplinkService.*;
 
-enum ServiceState {
-    UNINITIALIZED,
-    CONNECTED,
-    CRASHED,
-    FINISHED
-}
-
 public class Uplink implements ServiceConnection {
     private final Context context;
     private final UplinkReadyCallback serviceReadyCallback;
     private Messenger serviceHandle;
-    private ServiceState state = ServiceState.UNINITIALIZED;
+    private UplinkServiceState state = UplinkServiceState.UNINITIALIZED;
 
-    public ServiceState getState() {
+    public UplinkServiceState getState() {
         return state;
     }
 
@@ -132,7 +125,7 @@ public class Uplink implements ServiceConnection {
         try {
             stateAssertion();
             context.unbindService(this);
-            state = ServiceState.FINISHED;
+            state = UplinkServiceState.FINISHED;
         } catch (UplinkTerminatedException e) {
             Log.w(TAG, "Uplink service terminated before dispose was called");
         }
@@ -148,15 +141,15 @@ public class Uplink implements ServiceConnection {
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-        state = ServiceState.CONNECTED;
+        state = UplinkServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
         serviceReadyCallback.onUplinkReady();
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        if (state != ServiceState.FINISHED) {
-            state = ServiceState.CRASHED;
+        if (state != UplinkServiceState.FINISHED) {
+            state = UplinkServiceState.CRASHED;
         }
     }
 

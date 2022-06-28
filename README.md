@@ -9,7 +9,7 @@ This is an android library, the aim of the project is to create a JNI binding on
 ### Generate `.aar`
 The library can be exported as an archived package that can be easily loaded into an Android project by running the following command:
 ```sh
-./gradlew build
+./gradlew :lib:build
 ```
 
 ## How to use `uplink-android` in your app?
@@ -17,95 +17,52 @@ The library can be exported as an archived package that can be easily loaded int
 2. One can import the library in their own app by adding the following line to their app's `build.gradle` file:
 ```gradle
 dependencies {
-    implementation file('path/to/src/main/libs/uplink-release.aar')
+    implementation files('path/to/src/main/libs/uplink-release.aar')
 }
 ```
-3. Create an uplink object inside the appropriate `MainActivity.java` file:
-```java
-import io.bytebeam.uplink.Uplink;
+3. There is an example app in the `app` directory that demonstrates how to use the sdk.
 
-class MainActivity extends AppCompatActivity {
-    private Uplink uplink;
-    ...
-}
-```
-4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.JSON):
-```java
-// A string containing JSON formatted uplink config.
-String configFile = "{\n" +
-    "   \"project_id\": \"abc\",\n" +
-    "   \"broker\": \"broker.example.com\",\n" +
-    "   \"port\": 8883,\n" +
-    "   \"device_id\": \"123\",\n" +
-    "   \"authentication\": {\n" +
-    "       \"ca_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
-    "       \"device_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
-    "       \"device_private_key\": \"-----BEGIN RSA PRIVATE KEY----------END RSA PRIVATE KEY-----\\n\"\n" +
-    "   }\n" +
-    "}";
-// Get base folder path for application
-String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
+## API
 
-try {
-    ConfigBuilder config = new ConfigBuilder(configFile)
-                        .setOta(true, baseFolder + "/ota-file")
-                        .setPersistence(baseFolder + "/uplink", 104857600, 3);
-    uplink = new Uplink(config.build());
-} catch (Exception e) {
-    ...
-}
-```
-5. Once configured and connected to a broker, you can send data by using the `Payload` format as [described here](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#streamed-data):
-```java
-try {
-    JSONObject data = new JSONObject(); // JSON object that carries data to be sent to stream_name
-    data.put("field", "value");
-    UplinkPayload payload = new UplinkPayload("stream_name", timestamp, sequence, String.valueof(data));
-    uplink.send(data);
-} catch (Exception e) {
-    ...
-}
-```
-6. For your application to be able to receive an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
-```java
-class ActionRecvr implements ActionCallback {
-    ...
-    @Override
-    public void recvdAction(UplinkAction action) {
-        // action contains information that can be used by your app to execute operations. See uplink application docs for more info.
-        String id = action.getId();
-        String payload = action.getPayload();
-    }
-}
+The `io.bytebeam.uplink.Uplink` class provides the client side api for this sdk. Creating an instance of it will
+launch the uplink service. The provided `UplinkReadyCallback` will be notified when the service is ready to be
+used. The application must properly dispose the `Uplink` instance when it is no longer needed using the `dispose`
+method. The example app shows how to do that.
 
-// Inside MainActivity class
-ActionRecvr recv; // Considered to be properly initialized
-try {
-    uplink.subscribe(recv);
-} catch (Exception e) {
-    ...
-}
-```
-> **NOTE**: The `MainActivity` class itself can also be written such that it implements `ActionCallback` and hence you can subscribe by passing a reference to itself, using `this` keyword as is demonstrated within the demo app, [in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L119).
+The uplink class has the following methods that can be used for communicating with the backend:
 
-You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which can be created using the `ActionResponse` class:
-```java
-// A response to indicate action's progress
-ActionResponse response = new ActionResponse(id, "Running", 10);
-// A response to indicate action's successful completion
-response = ActionResponse.success(id);
-// A response to indicate action's failed completion, along with error
-Exception e1 = new Exception("Error: 1");
-response = ActionResponse.failure(id, e1.toString());
-// You can carry multiple errors in a single response
-Exception e2 = new Exception("Error: 2");
-response = ActionResponse.add_error(response, e2.toString());
-try {
-    uplink.respond(response);
-} catch (Exception e) {
-    ...
-}
+1. `Uplink::subscribe(ActionSubscriber)` - Subscribe to action targeting this device.
+2. `Uplink::sendData(UplinkPayload)` - Send some data to the backend.
+3. `Uplink::respondToAction(ActionResponse)` - Respond to an action that the device received from the backend.
+
+## Running the example app
+
+You'll need an MQTT broker to run the example app. The easiest way to get one is to use [mosquitto](https://mosquitto.org/).
+On an ubuntu machine, you'll need to install `mosquitto` and `mosquitto-client` packages.
+
+1. Start the `mosquitto` server:
+```sh
+mosquitto -p 8833 -v
 ```
 
-## How to run the demo application?
-We have provided in this repo, a demo application that to an extent demonstrates how you can use the library. You can compile and run in on an emulator or personal developer device of your choice, by using the Build and Run utilities provided within Android Studio.
+2. Subscribe to battery notifications:
+```sh
+mosquitto_sub -p 8833 -t /tenants/demo/devices/1234/events/battery_level -v
+```
+
+3. Start the example app in an emulator. You can run it on a physical device as well, but they'll need to be on the 
+same network and the firewall will have to be configured properly.
+
+4. You'll start to see the battery notifications in the `mosquitto_sub` console.
+
+5. Subscribe for action responses:
+```sh
+mosquitto_sub -p 8833 -t /tenants/demo/devices/1234/action/status -v
+```
+
+6. Send an action to the backend:
+```sh
+mosquitto_pub -p 8833 -t /tenants/demo/devices/1234/actions -m '{"action_id": "1", "kind": "test", "name": "test", "payload": "data"}'
+```
+
+7. You'll start to see the action responses in the `mosquitto_sub` console (10 for each action dispatched).

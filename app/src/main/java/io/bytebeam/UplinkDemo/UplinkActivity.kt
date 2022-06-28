@@ -1,5 +1,6 @@
 package io.bytebeam.UplinkDemo
 
+import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -7,6 +8,7 @@ import android.widget.Button
 import android.widget.TextView
 import io.bytebeam.uplink.UplinkReadyCallback
 import io.bytebeam.uplink.Uplink
+import io.bytebeam.uplink.UplinkServiceState
 import io.bytebeam.uplink.service.ActionSubscriber
 import io.bytebeam.uplink.types.ActionResponse
 import io.bytebeam.uplink.types.UplinkAction
@@ -25,19 +27,6 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
         setContentView(R.layout.activity_uplink)
 
         logView = findViewById(R.id.logView)
-        findViewById<Button>(R.id.sendBtn).setOnClickListener {
-            val payload = JSONObject()
-            payload.put("result", dataIndex * dataIndex)
-            uplink?.sendData(
-                UplinkPayload(
-                    "square_stream",
-                    dataIndex++,
-                    System.currentTimeMillis(),
-                    payload
-                )
-            )
-        }
-        log("<<END>>")
     }
 
     override fun onStart() {
@@ -49,8 +38,8 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
                 [persistence]
                 path = "${applicationInfo.dataDir}/uplink"
                 
-                [streams.square_stream]
-                topic = "/tenants/{tenant_id}/devices/{device_id}/events/square"
+                [streams.battery_stream]
+                topic = "/tenants/{tenant_id}/devices/{device_id}/events/battery_level"
                 buf_size = 1
             """.trimIndent(),
             true,
@@ -65,6 +54,34 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
 
     override fun onUplinkReady() {
         uplink?.subscribe(this)
+        Executors.newSingleThreadExecutor().execute {
+            var idx = 1
+            while (uplink?.state == UplinkServiceState.CONNECTED) {
+                val service = getSystemService(BATTERY_SERVICE) as BatteryManager
+                uplink?.sendData(
+                    UplinkPayload(
+                        "battery_stream",
+                        idx++,
+                        System.currentTimeMillis(),
+                        JSONObject().apply {
+                            put("level", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
+                            put("status", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS).let {
+                                when (it) {
+                                    BatteryManager.BATTERY_STATUS_CHARGING -> "charging"
+                                    BatteryManager.BATTERY_STATUS_DISCHARGING -> "discharging"
+                                    BatteryManager.BATTERY_STATUS_FULL -> "full"
+                                    BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "not charging"
+                                    BatteryManager.BATTERY_STATUS_UNKNOWN -> "unknown"
+                                    else -> "unknown"
+                                }
+                            })
+                            log("Sending battery data: $this")
+                        }
+                    )
+                )
+                Thread.sleep(5000)
+            }
+        }
     }
 
     override fun processAction(action: UplinkAction) {
