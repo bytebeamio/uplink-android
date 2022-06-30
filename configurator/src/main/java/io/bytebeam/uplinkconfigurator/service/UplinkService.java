@@ -7,6 +7,8 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
+import io.bytebeam.uplink.common.Utils;
+import io.bytebeam.uplinkconfigurator.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +36,17 @@ public class UplinkService extends Service {
         String configString = intent.getStringExtra(UPLINK_CONFIG_KEY);
         boolean enableLogging = intent.getBooleanExtra(ENABLE_LOGGING_KEY, false);
         uplink = NativeApi.createUplink(
-                authString,
-                configString,
-                enableLogging,
+                Utils.getRawTextFile(getApplicationContext(), R.raw.auth_config),
+                String.format(
+                        "[persistence]\n" +
+                                "path = \"%s/uplink\"\n" +
+                                "\n" +
+                                "[streams.battery_stream]\n" +
+                                "topic = \"/tenants/{tenant_id}/devices/{device_id}/events/battery_level\"\n" +
+                                "buf_size = 1\n",
+                        getApplicationContext().getFilesDir().getAbsolutePath()
+                ),
+                true,
                 this::uplinkSubscription
         );
         Log.d(TAG, "Uplink service created");
