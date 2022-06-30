@@ -6,14 +6,9 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.*;
 import android.util.Log;
-import io.bytebeam.uplink.service.ActionSubscriber;
-import io.bytebeam.uplink.service.UplinkService;
-import io.bytebeam.uplink.service.UplinkTerminatedException;
-import io.bytebeam.uplink.types.ActionResponse;
-import io.bytebeam.uplink.types.UplinkAction;
-import io.bytebeam.uplink.types.UplinkPayload;
+import io.bytebeam.uplink.common.*;
 
-import static io.bytebeam.uplink.service.UplinkService.*;
+import static io.bytebeam.uplink.common.Constants.*;
 
 public class Uplink implements ServiceConnection {
     private final Context context;
@@ -29,24 +24,16 @@ public class Uplink implements ServiceConnection {
      * Spawns an instance of the uplink.
      *
      * @param context              Current application context
-     * @param authConfig           authorization json configuration
-     * @param uplinkConfig         uplink toml configuration
-     * @param enableLogging        whether android logs should be reported as well
      * @param uplinkReadyCallback callback that will be invoked when the service is ready to be used
      */
     public Uplink(
             Context context,
-            String authConfig,
-            String uplinkConfig,
-            boolean enableLogging,
             UplinkReadyCallback uplinkReadyCallback
     ) {
         this.context = context;
         this.serviceReadyCallback = uplinkReadyCallback;
-        Intent intent = new Intent(context, UplinkService.class);
-        intent.putExtra(AUTH_CONFIG_KEY, authConfig);
-        intent.putExtra(UPLINK_CONFIG_KEY, uplinkConfig);
-        intent.putExtra(ENABLE_LOGGING_KEY, enableLogging);
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(context.getPackageName(), "io.bytebeam.uplink.service.UplinkService"));
         context.bindService(
                 intent,
                 this,

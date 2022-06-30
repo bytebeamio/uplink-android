@@ -9,3 +9,5 @@ dependencyResolutionManagement {
 rootProject.name = "uplink"
 include ':lib'
 include ':app'
+include ':common'
+include ':configurator'

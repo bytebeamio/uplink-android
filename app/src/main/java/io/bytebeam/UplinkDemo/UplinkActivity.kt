@@ -4,19 +4,19 @@ import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
 import android.widget.TextView
-import io.bytebeam.uplink.UplinkReadyCallback
+import io.bytebeam.uplink.common.UplinkReadyCallback
 import io.bytebeam.uplink.Uplink
 import io.bytebeam.uplink.UplinkServiceState
-import io.bytebeam.uplink.service.ActionSubscriber
-import io.bytebeam.uplink.types.ActionResponse
-import io.bytebeam.uplink.types.UplinkAction
-import io.bytebeam.uplink.types.UplinkPayload
+import io.bytebeam.uplink.common.ActionSubscriber
+import io.bytebeam.uplink.common.ActionResponse
+import io.bytebeam.uplink.common.UplinkAction
+import io.bytebeam.uplink.common.UplinkPayload
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
-class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscriber {
+class UplinkActivity : AppCompatActivity(), io.bytebeam.uplink.common.UplinkReadyCallback,
+    io.bytebeam.uplink.common.ActionSubscriber {
     val logs = mutableListOf<String>()
     lateinit var logView: TextView
 
@@ -59,7 +59,7 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
             while (uplink?.state == UplinkServiceState.CONNECTED) {
                 val service = getSystemService(BATTERY_SERVICE) as BatteryManager
                 uplink?.sendData(
-                    UplinkPayload(
+                    io.bytebeam.uplink.common.UplinkPayload(
                         "battery_stream",
                         idx++,
                         System.currentTimeMillis(),
@@ -84,13 +84,13 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
         }
     }
 
-    override fun processAction(action: UplinkAction) {
+    override fun processAction(action: io.bytebeam.uplink.common.UplinkAction) {
         log("Received action: $action")
         Executors.newSingleThreadExecutor().execute {
             for (i in 1..10) {
                 log("sending response: $i")
                 uplink?.respondToAction(
-                    ActionResponse(
+                    io.bytebeam.uplink.common.ActionResponse(
                         action.id,
                         i,
                         System.currentTimeMillis(),
