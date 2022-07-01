@@ -1,10 +1,13 @@
 package io.bytebeam.UplinkDemo
 
+import android.content.Context
 import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
+import android.widget.Toast
+import io.bytebeam.uplink.ConfiguratorUnavailableException
 import io.bytebeam.uplink.Uplink
 import io.bytebeam.uplink.UplinkReadyCallback
 import io.bytebeam.uplink.UplinkServiceState
@@ -29,10 +32,15 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
 
     override fun onStart() {
         super.onStart()
-        uplink = Uplink(
-            this,
-            this
-        )
+        try {
+            uplink = Uplink(
+                this,
+                this
+            )
+        } catch (e: ConfiguratorUnavailableException) {
+            Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_SHORT).show()
+            finish()
+        }
     }
 
     override fun onStop() {
@@ -83,9 +91,9 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
                         i,
                         System.currentTimeMillis(),
                         if (i == 10) {
-                            "done"
+                            "Progress"
                         } else {
-                            "processing"
+                            "Completed"
                         },
                         i * 10,
                         arrayOf()

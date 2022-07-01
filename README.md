@@ -16,7 +16,8 @@ configuration for the uplink bridge (See [this file](configurator/src/main/res/r
 
 The client sdk can be used by app developers to communicate with the uplink service. It handles all the low level
 messaging details and provides a simple high level interface for the app developers. The configurator app must be
-installed on the device before the client sdk can be used.
+installed on the device before the client sdk can be used, otherwise an exception will be throws during initialization.
+There is also an `boolean Uplink::configuratorAvailable(Context)` method.
 
 #### API
 

@@ -11,7 +11,7 @@ import io.bytebeam.uplink.common.*;
 import static io.bytebeam.uplink.common.Constants.*;
 
 public class Uplink implements ServiceConnection {
-    private static final String TAG = "UplinkService";
+    private static final String TAG = "UplinkMessenger";
     private final Context context;
     private final UplinkReadyCallback serviceReadyCallback;
     private Messenger serviceHandle;
@@ -30,7 +30,10 @@ public class Uplink implements ServiceConnection {
     public Uplink(
             Context context,
             UplinkReadyCallback uplinkReadyCallback
-    ) {
+    ) throws ConfiguratorUnavailableException {
+        if (!configuratorAvailable(context)) {
+            throw new ConfiguratorUnavailableException();
+        }
         this.context = context;
         this.serviceReadyCallback = uplinkReadyCallback;
         Intent intent = new Intent();
@@ -133,6 +136,17 @@ public class Uplink implements ServiceConnection {
         }
     }
 
+    @Override
+    public void onBindingDied(ComponentName name) {
+        Log.e(TAG, String.format("binding died: %s", name.toString()));
+    }
+
+    @Override
+    public void onNullBinding(ComponentName name) {
+        Log.e(TAG, String.format("binding null: %s", name.toString()));
+    }
+
+
     private void stateAssertion() throws UplinkTerminatedException {
         switch (state) {
             case UNINITIALIZED:
@@ -142,6 +156,12 @@ public class Uplink implements ServiceConnection {
             case FINISHED:
                 throw new IllegalStateException("attempt to use service after it was disposed");
         }
+    }
+
+    public static boolean configuratorAvailable(Context context) {
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID));
+        return context.getPackageManager().queryIntentServices(intent, 0).size() != 0;
     }
 }
 
