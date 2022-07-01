@@ -1,4 +1,4 @@
-package io.bytebeam.uplink.common;
+package io.bytebeam.uplink;
 
 /**
  * Thrown when the client notices that the remote

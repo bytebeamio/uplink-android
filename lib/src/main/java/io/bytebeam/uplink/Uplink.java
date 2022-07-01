@@ -11,6 +11,7 @@ import io.bytebeam.uplink.common.*;
 import static io.bytebeam.uplink.common.Constants.*;
 
 public class Uplink implements ServiceConnection {
+    private static final String TAG = "UplinkService";
     private final Context context;
     private final UplinkReadyCallback serviceReadyCallback;
     private Messenger serviceHandle;
@@ -33,7 +34,7 @@ public class Uplink implements ServiceConnection {
         this.context = context;
         this.serviceReadyCallback = uplinkReadyCallback;
         Intent intent = new Intent();
-        intent.setComponent(new ComponentName(context.getPackageName(), "io.bytebeam.uplink.service.UplinkService"));
+        intent.setComponent(new ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID));
         context.bindService(
                 intent,
                 this,
@@ -116,14 +117,6 @@ public class Uplink implements ServiceConnection {
         } catch (UplinkTerminatedException e) {
             Log.w(TAG, "Uplink service terminated before dispose was called");
         }
-    }
-
-    /**
-     * To be used for testing
-     */
-    public void crash() throws UplinkTerminatedException {
-        stateAssertion();
-        callMethod(CRASH, null);
     }
 
     @Override

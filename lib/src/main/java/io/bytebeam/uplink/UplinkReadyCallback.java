@@ -1,4 +1,4 @@
-package io.bytebeam.uplink.common;
+package io.bytebeam.uplink;
 
 public interface UplinkReadyCallback {
     void onUplinkReady();

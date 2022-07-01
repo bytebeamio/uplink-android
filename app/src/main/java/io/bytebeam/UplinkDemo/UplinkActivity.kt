@@ -5,8 +5,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
-import io.bytebeam.uplink.common.UplinkReadyCallback
 import io.bytebeam.uplink.Uplink
+import io.bytebeam.uplink.UplinkReadyCallback
 import io.bytebeam.uplink.UplinkServiceState
 import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
@@ -15,13 +15,11 @@ import io.bytebeam.uplink.common.UplinkPayload
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
-class UplinkActivity : AppCompatActivity(), io.bytebeam.uplink.common.UplinkReadyCallback,
-    io.bytebeam.uplink.common.ActionSubscriber {
+class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscriber {
     val logs = mutableListOf<String>()
     lateinit var logView: TextView
 
     var uplink: Uplink? = null;
-    var dataIndex = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_uplink)
@@ -33,16 +31,6 @@ class UplinkActivity : AppCompatActivity(), io.bytebeam.uplink.common.UplinkRead
         super.onStart()
         uplink = Uplink(
             this,
-            resources.getRawTextFile(R.raw.local_device),
-            """
-                [persistence]
-                path = "${applicationInfo.dataDir}/uplink"
-                
-                [streams.battery_stream]
-                topic = "/tenants/{tenant_id}/devices/{device_id}/events/battery_level"
-                buf_size = 1
-            """.trimIndent(),
-            true,
             this
         )
     }
@@ -59,7 +47,7 @@ class UplinkActivity : AppCompatActivity(), io.bytebeam.uplink.common.UplinkRead
             while (uplink?.state == UplinkServiceState.CONNECTED) {
                 val service = getSystemService(BATTERY_SERVICE) as BatteryManager
                 uplink?.sendData(
-                    io.bytebeam.uplink.common.UplinkPayload(
+                    UplinkPayload(
                         "battery_stream",
                         idx++,
                         System.currentTimeMillis(),
@@ -84,13 +72,13 @@ class UplinkActivity : AppCompatActivity(), io.bytebeam.uplink.common.UplinkRead
         }
     }
 
-    override fun processAction(action: io.bytebeam.uplink.common.UplinkAction) {
+    override fun processAction(action: UplinkAction) {
         log("Received action: $action")
         Executors.newSingleThreadExecutor().execute {
             for (i in 1..10) {
                 log("sending response: $i")
                 uplink?.respondToAction(
-                    io.bytebeam.uplink.common.ActionResponse(
+                    ActionResponse(
                         action.id,
                         i,
                         System.currentTimeMillis(),

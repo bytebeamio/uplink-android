@@ -11,7 +11,7 @@ public class UplinkAction implements Parcelable {
     String name;
     String payload;
 
-    public static final Parcelable.Creator<UplinkAction> CREATOR = new Parcelable.Creator<UplinkAction>() {
+    public static final Creator<UplinkAction> CREATOR = new Creator<UplinkAction>() {
         @Override
         public UplinkAction createFromParcel(Parcel in) {
             return new UplinkAction(
