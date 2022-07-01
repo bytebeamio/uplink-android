@@ -1,4 +1,4 @@
-package io.bytebeam.uplinkconfigurator.service;
+package io.bytebeam.uplink.service;
 
 import android.app.Service;
 import android.content.Intent;
@@ -8,7 +8,7 @@ import androidx.annotation.Nullable;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
 import io.bytebeam.uplink.common.Utils;
-import io.bytebeam.uplinkconfigurator.R;
+import io.bytebeam.uplink.configurator.R;
 
 import java.util.ArrayList;
 import java.util.List;

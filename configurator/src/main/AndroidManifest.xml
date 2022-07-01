@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="io.bytebeam.uplinkconfigurator">
+          package="io.bytebeam.uplink.configurator">
 
     <application
             android:allowBackup="true"
@@ -10,7 +10,7 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.Uplink">
         <activity
-                android:name=".MainActivity"
+                android:name="io.bytebeam.uplink.configurator.MainActivity"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -20,7 +20,7 @@
         </activity>
 
         <service
-                android:name="io.bytebeam.uplinkconfigurator.service.UplinkService"
+                android:name="io.bytebeam.uplink.service.UplinkService"
                 android:enabled="true"
                 android:exported="true"
                 android:process=":uplink_service"

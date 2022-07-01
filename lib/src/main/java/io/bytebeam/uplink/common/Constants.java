@@ -8,6 +8,6 @@ public class Constants {
     /// for testing, will trigger a segmentation fault
     public static final int CRASH = 3;
 
-    public static final String CONFIGURATOR_APP_ID = "io.bytebeam.uplinkconfigurator";
-    public static final String UPLINK_SERVICE_ID = "io.bytebeam.uplinkconfigurator.service.UplinkService";
+    public static final String CONFIGURATOR_APP_ID = "io.bytebeam.uplink.configurator";
+    public static final String UPLINK_SERVICE_ID = "io.bytebeam.uplink.service.UplinkService";
 }

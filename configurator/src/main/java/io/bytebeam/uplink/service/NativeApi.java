@@ -1,4 +1,4 @@
-package io.bytebeam.uplinkconfigurator.service;
+package io.bytebeam.uplink.service;
 
 import io.bytebeam.uplink.common.ActionSubscriber;
 import io.bytebeam.uplink.common.UplinkPayload;

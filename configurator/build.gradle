@@ -7,7 +7,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "io.bytebeam.uplinkconfigurator"
+        applicationId "io.bytebeam.uplink.configurator"
         minSdk 21
         targetSdk 32
         versionCode 1
@@ -94,7 +94,7 @@ archTriplets.each { arch, target ->
 
     // Hook up clean tasks
     tasks.create(name: "clean-${arch}", type: Delete, description: "Deleting built libs for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
-        delete fileTree("${project.ext.cargo_target_directory}/${target}/release") {
+        delete fileTree("src/main/jniLibs") {
             include '*.so'
         }
     }

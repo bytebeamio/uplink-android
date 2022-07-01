@@ -38,7 +38,7 @@ public class Uplink implements ServiceConnection {
         context.bindService(
                 intent,
                 this,
-                Context.BIND_AUTO_CREATE | Context.BIND_DEBUG_UNBIND
+                Context.BIND_AUTO_CREATE | Context.BIND_NOT_FOREGROUND
         );
     }
 
