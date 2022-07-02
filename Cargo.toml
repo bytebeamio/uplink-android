@@ -21,9 +21,6 @@ uplink = { git = "https://github.com/bmcpt/uplink", branch = "android_adjustment
 name = "uplink_android"
 crate-type = ["lib", "cdylib"]
 
-[build-dependencies]
-flapigen = "0.6.0-pre7"
-
 [profile.dev]
 opt-level = 1
 debug = true
