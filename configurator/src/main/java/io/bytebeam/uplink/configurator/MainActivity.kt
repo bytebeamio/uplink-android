@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
                                         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {}
                                         override fun onServiceDisconnected(name: ComponentName?) {}
                                     },
-                                    0
+                                    Context.BIND_AUTO_CREATE or Context.BIND_NOT_FOREGROUND
                                 )
                             }
                         }

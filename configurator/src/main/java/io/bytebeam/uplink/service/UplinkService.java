@@ -28,6 +28,7 @@ public class UplinkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "client requested binding");
         if (intent.getBooleanExtra(KILL_COMMAND_TAG, false)) {
             Log.d(TAG, "killing service");
             onUnbind(null);
@@ -38,7 +39,7 @@ public class UplinkService extends Service {
         String authConfig = prefs.getString(PREFS_AUTH_CONFIG_KEY, null);
         if (authConfig == null) {
             Log.d(TAG, "auth config not found, stopping service");
-            onUnbind(null);
+//            onUnbind(null);
             return null;
         }
 
@@ -60,8 +61,8 @@ public class UplinkService extends Service {
             Log.d(TAG, "uplink native context initialized");
         }
 
+        Log.d(TAG, "returning messenger");
         IBinder result = new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
-
         return result;
     }
 

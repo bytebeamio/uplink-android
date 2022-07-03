@@ -7,13 +7,16 @@ import android.content.ServiceConnection;
 import android.os.*;
 import android.util.Log;
 import io.bytebeam.uplink.common.*;
+import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException;
+import io.bytebeam.uplink.common.exceptions.UplinkNotConfiguredException;
+import io.bytebeam.uplink.common.exceptions.UplinkTerminatedException;
 
 import static io.bytebeam.uplink.common.Constants.*;
 
 public class Uplink implements ServiceConnection {
     private static final String TAG = "UplinkMessenger";
     private final Context context;
-    private final UplinkReadyCallback serviceReadyCallback;
+    private final UplinkReadyCallback serviceStateCallback;
     private Messenger serviceHandle;
     private UplinkServiceState state = UplinkServiceState.UNINITIALIZED;
 
@@ -35,7 +38,7 @@ public class Uplink implements ServiceConnection {
             throw new ConfiguratorUnavailableException();
         }
         this.context = context;
-        this.serviceReadyCallback = uplinkReadyCallback;
+        this.serviceStateCallback = uplinkReadyCallback;
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID));
         context.bindService(
@@ -119,14 +122,14 @@ public class Uplink implements ServiceConnection {
             state = UplinkServiceState.FINISHED;
         } catch (UplinkTerminatedException e) {
             Log.w(TAG, "Uplink service terminated before dispose was called");
-        }
+        } catch (UplinkNotConfiguredException e) {}
     }
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         state = UplinkServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
-        serviceReadyCallback.onUplinkReady();
+        serviceStateCallback.onUplinkReady();
     }
 
     @Override
@@ -138,21 +141,24 @@ public class Uplink implements ServiceConnection {
 
     @Override
     public void onBindingDied(ComponentName name) {
-        Log.e(TAG, String.format("binding died: %s", name.toString()));
+        Log.e(TAG, "uplink binding died");
     }
 
     @Override
     public void onNullBinding(ComponentName name) {
-        Log.e(TAG, String.format("binding null: %s", name.toString()));
+        Log.i(TAG, "uplink service not ready");
+        state = UplinkServiceState.NOT_READY;
+        serviceStateCallback.onServiceNotConfigured();
     }
-
 
     private void stateAssertion() throws UplinkTerminatedException {
         switch (state) {
-            case UNINITIALIZED:
-                throw new IllegalStateException("attempt to use service before initialization is complete");
+            case NOT_READY:
+                throw new UplinkNotConfiguredException();
             case CRASHED:
                 throw new UplinkTerminatedException();
+            case UNINITIALIZED:
+                throw new IllegalStateException("attempt to use service before initialization is complete");
             case FINISHED:
                 throw new IllegalStateException("attempt to use service after it was disposed");
         }

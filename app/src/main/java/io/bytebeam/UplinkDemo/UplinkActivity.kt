@@ -1,13 +1,12 @@
 package io.bytebeam.UplinkDemo
 
-import android.content.Context
 import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
-import io.bytebeam.uplink.ConfiguratorUnavailableException
+import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException
 import io.bytebeam.uplink.Uplink
 import io.bytebeam.uplink.UplinkReadyCallback
 import io.bytebeam.uplink.UplinkServiceState
@@ -28,24 +27,23 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
         setContentView(R.layout.activity_uplink)
 
         logView = findViewById(R.id.logView)
-    }
 
-    override fun onStart() {
-        super.onStart()
-        try {
-            uplink = Uplink(
-                this,
-                this
-            )
-        } catch (e: ConfiguratorUnavailableException) {
-            Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_SHORT).show()
-            finish()
+        if (uplink == null) {
+            try {
+                uplink = Uplink(
+                    this,
+                    this
+                )
+            } catch (e: ConfiguratorUnavailableException) {
+                Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
     }
 
-    override fun onStop() {
+    override fun onDestroy() {
         uplink?.dispose()
-        super.onStop()
+        super.onDestroy()
     }
 
     override fun onUplinkReady() {
@@ -75,9 +73,14 @@ class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscribe
                         }
                     )
                 )
-                Thread.sleep(5000)
+                Thread.sleep(15000)
             }
         }
+    }
+
+    override fun onServiceNotConfigured() {
+        Toast.makeText(this, "uplink service not configured", Toast.LENGTH_SHORT).show()
+        finish()
     }
 
     override fun processAction(action: UplinkAction) {
