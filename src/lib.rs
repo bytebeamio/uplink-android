@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
-use log::{error, Level};
+use log::{debug, error, Level};
 use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initalize_config;
 use crate::bridge::AndroidBridge;
@@ -35,9 +35,6 @@ impl UplinkAndroidContext {
                 self.bridge_partitions.get_mut(&payload.stream).unwrap()
             }
         };
-
-        error!("found partition: {:?}", partition);
-        error!("payload: {:?}", payload);
 
         if let Err(e) = partition.push(payload) {
             error!("Failed to send data. Error = {:?}", e.to_string());
@@ -85,9 +82,14 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
 
     let action_callback = env.new_global_ref(action_callback).unwrap();
 
+    let auth_config = String::from(env.get_string(auth_config).unwrap());
+    let uplink_config = String::from(env.get_string(uplink_config).unwrap());
+    debug!(target: "auth config", "{}", auth_config);
+    debug!(target: "uplink config", "{}", uplink_config);
+
     let config = Arc::new(initalize_config(
-        strace!(String::from(env.get_string(auth_config).unwrap())).as_str(),
-        String::from(env.get_string(uplink_config).unwrap()).as_str(),
+        auth_config.as_str(),
+        uplink_config.as_str(),
     ).unwrap());
 
     let mut uplink = Uplink::new(config.clone()).unwrap();
