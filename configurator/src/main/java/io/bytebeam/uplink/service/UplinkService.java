@@ -22,17 +22,8 @@ public class UplinkService extends Service {
     public static final String PREFS_NAME = "configuration";
     public static final String PREFS_AUTH_CONFIG_KEY = "auth_config";
     public static final String PREFS_AUTH_CONFIG_NAME_KEY = "auth_config_name";
-    public static final String PREFS_CLIENTS_COUNT_KEY = "clients_count";
     List<Messenger> subscribers = new ArrayList<>();
     long uplink = 0;
-
-    int clientsCount = 0;
-    private void setClientsCount(int newCount) {
-        clientsCount = newCount;
-        SharedPreferences.Editor prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
-        prefs.putInt(PREFS_CLIENTS_COUNT_KEY, clientsCount);
-        prefs.apply();
-    }
 
     @Nullable
     @Override
@@ -46,8 +37,9 @@ public class UplinkService extends Service {
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String authConfig = prefs.getString(PREFS_AUTH_CONFIG_KEY, null);
         if (authConfig == null) {
-            // TODO: handle this
-            authConfig = Utils.getRawTextFile(getApplicationContext(), R.raw.auth_config);
+            Log.d(TAG, "auth config not found, stopping service");
+            onUnbind(null);
+            return null;
         }
 
         if (uplink == 0) {
@@ -69,14 +61,6 @@ public class UplinkService extends Service {
         }
 
         IBinder result = new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
-
-        try {
-            result.linkToDeath(() -> {
-                Log.d(TAG, "binder died");
-                setClientsCount(clientsCount-1);
-            }, 0);
-        } catch (RemoteException e) {}
-        setClientsCount(clientsCount+1);
 
         return result;
     }

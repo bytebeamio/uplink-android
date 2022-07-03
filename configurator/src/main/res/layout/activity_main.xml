@@ -9,6 +9,13 @@
         android:layout_gravity="center_horizontal"
         android:gravity="center_horizontal"
         tools:context=".MainActivity">
+    <Button
+            android:id="@+id/select_config_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Select Device Config"
+            />
+
     <TextView
             android:id="@+id/status_view"
             android:layout_width="wrap_content"
@@ -18,11 +25,4 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
-
-    <Button
-            android:id="@+id/select_config_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select Device Config"
-            />
 </LinearLayout>
