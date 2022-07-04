@@ -4,12 +4,15 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ResolveInfo;
 import android.os.*;
 import android.util.Log;
 import io.bytebeam.uplink.common.*;
 import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException;
 import io.bytebeam.uplink.common.exceptions.UplinkNotConfiguredException;
 import io.bytebeam.uplink.common.exceptions.UplinkTerminatedException;
+
+import java.util.List;
 
 import static io.bytebeam.uplink.common.Constants.*;
 
@@ -167,7 +170,9 @@ public class Uplink implements ServiceConnection {
     public static boolean configuratorAvailable(Context context) {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID));
-        return context.getPackageManager().queryIntentServices(intent, 0).size() != 0;
+        List<ResolveInfo> services = context.getPackageManager().queryIntentServices(intent, 0);
+        Log.e(TAG, String.format("Available services: %s", services.toString()));
+        return services.size() != 0;
     }
 }
 

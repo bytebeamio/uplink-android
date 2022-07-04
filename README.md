@@ -8,16 +8,16 @@ The project has two main modules:
 
 ### Configurator app
 
-This app provides the uplink service that can be used to launch and communicate with the uplink bridge. Other apps can
+This app provides the uplink service that can be used to launch and communicate with the backend. Other apps can
 bind to this service and use it to communicate with the selected backend. This app also provides the authorization
-configuration for the uplink bridge (See [this file](configurator/src/main/res/raw/auth_config.json)).
+configuration for the uplink bridge, which you have to select using the application UI.
 
 ### Client SDK
 
 The client sdk can be used by app developers to communicate with the uplink service. It handles all the low level
 messaging details and provides a simple high level interface for the app developers. The configurator app must be
 installed on the device before the client sdk can be used, otherwise an exception will be throws during initialization.
-There is also an `boolean Uplink::configuratorAvailable(Context)` method.
+There is also an `boolean Uplink.configuratorAvailable(Context)` method.
 
 #### API
 
@@ -28,9 +28,9 @@ the `dispose` method. The example app shows how to do that.
 
 The uplink class has the following methods that can be used for communicating with the backend:
 
-1. `Uplink::subscribe(ActionSubscriber)` - Subscribe to action targeting this device.
-2. `Uplink::sendData(UplinkPayload)` - Send some data to the backend.
-3. `Uplink::respondToAction(ActionResponse)` - Respond to an action that the device received from the backend.
+1. `Uplink.subscribe(ActionSubscriber)` - Subscribe to action targeting this device.
+2. `Uplink.sendData(UplinkPayload)` - Send some data to the backend.
+3. `Uplink.respondToAction(ActionResponse)` - Respond to an action that the device received from the backend.
 
 Note: There is also an example app in the `app` directory that demonstrates how to use the client sdk.
 
