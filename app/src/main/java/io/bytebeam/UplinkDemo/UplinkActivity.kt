@@ -16,7 +16,6 @@ import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
 import io.bytebeam.uplink.common.UplinkAction
 import io.bytebeam.uplink.common.UplinkPayload
-import io.bytebeam.uplink.common.exceptions.UplinkTerminatedException
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
@@ -67,6 +66,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                         idx++,
                         System.currentTimeMillis(),
                         JSONObject().apply {
+                            put("package", applicationContext.packageName)
                             put("level", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
                             put("status", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS).let {
                                 when (it) {

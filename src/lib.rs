@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
-use log::{debug, error, Level};
+use log::{debug, error, info, Level};
 use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initalize_config;
 use crate::bridge::AndroidBridge;
@@ -160,6 +160,7 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_sendData(
     let context = &mut *(context as *mut UplinkAndroidContext);
     let payload = Payload::from_java(env, payload);
 
+    debug!("pushing payload: {:?}", payload);
     context.push_payload(payload);
 }
 
