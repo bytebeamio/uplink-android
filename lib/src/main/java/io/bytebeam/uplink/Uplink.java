@@ -16,7 +16,7 @@ import static io.bytebeam.uplink.common.Constants.*;
 public class Uplink implements ServiceConnection {
     private static final String TAG = "UplinkMessenger";
     private final Context context;
-    private final UplinkReadyCallback serviceStateCallback;
+    private final UplinkStateCallback serviceStateCallback;
     private Messenger serviceHandle;
     private UplinkServiceState state = UplinkServiceState.UNINITIALIZED;
 
@@ -32,7 +32,7 @@ public class Uplink implements ServiceConnection {
      */
     public Uplink(
             Context context,
-            UplinkReadyCallback uplinkReadyCallback
+            UplinkStateCallback uplinkReadyCallback
     ) throws ConfiguratorUnavailableException {
         if (!configuratorAvailable(context)) {
             throw new ConfiguratorUnavailableException();

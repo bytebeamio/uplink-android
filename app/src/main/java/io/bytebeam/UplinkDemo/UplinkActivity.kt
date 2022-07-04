@@ -8,7 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException
 import io.bytebeam.uplink.Uplink
-import io.bytebeam.uplink.UplinkReadyCallback
+import io.bytebeam.uplink.UplinkStateCallback
 import io.bytebeam.uplink.UplinkServiceState
 import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
@@ -17,7 +17,7 @@ import io.bytebeam.uplink.common.UplinkPayload
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
-class UplinkActivity : AppCompatActivity(), UplinkReadyCallback, ActionSubscriber {
+class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscriber {
     val logs = mutableListOf<String>()
     lateinit var logView: TextView
 
