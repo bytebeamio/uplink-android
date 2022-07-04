@@ -1,111 +1,50 @@
-# uplink android
-This is an android library, the aim of the project is to create a JNI binding on top of the `uplink` rust library to enable developers building apps for the Android platform to simply import and use it, without having to deal with the complexity of build systems, JNI, etc.
+# Uplink Android SDK
 
-### Requirements
-1. [JDK and Android SDK](https://developer.android.com/studio/install)
-2. [gradle 7.0.2](https://gradle.org/install/)
-3. cargo and [cross](https://crates.io/crates/cross)
+SDK for using the [uplink](https://github.com/bytebeamio/uplink) bridge from android.
 
-### Generate `.aar`
-The library can be exported as an archived package that can be easily loaded into an Android project by running the following command:
+## Architecture
+
+The project has two main modules:
+
+### Configurator app
+
+This app provides the uplink service that can be used to launch and communicate with the backend. Other apps can
+bind to this service and use it to communicate with the selected backend. This app also provides the authorization
+configuration for the uplink bridge, which you have to select using the application UI.
+
+### Client SDK
+
+The client sdk can be used by app developers to communicate with the uplink service. It handles all the low level
+messaging details and provides a simple high level interface for the app developers. The configurator app must be
+installed on the device before the client sdk can be used, otherwise an exception will be throws during initialization.
+There is also an `boolean Uplink.configuratorAvailable(Context)` method.
+
+#### API
+
+The `io.bytebeam.uplink.Uplink` class (from the `lib` module) provides the client side api for this sdk. These are the
+steps to use this library:
+
+1. Use `Uplink.configuratorAvailable(Context)` to check if the configurator app is installed on the device.
+2. Instantiate the `Uplink` class, providing an implementation of `UplinkStateCallback`. This will be used to
+   notify the app about the state of the uplink bridge. This interface has two methods
+    1. `onServiceReady()`: invoked when the service is ready to be used
+    2. `onServiceNotConfigured()`: invoked if the service hasn't been configured yet. The user needs to select the
+       authorization configuration using the configurator app.
+3. Once the service is ready, you can use the methods on the `Uplink` instance to communicate with the backend:
+    1. `Uplink.subscribe(ActionSubscriber)` - Subscribe to action targeting this device.
+    2. `Uplink.sendData(UplinkPayload)` - Send some data to the backend.
+    3. `Uplink.respondToAction(ActionResponse)` - Respond to an action that the device received from the backend.
+       Each of these methods can throw an `UplinkTerminatedException` if the uplink service is terminated for some
+       reason (the user stops it or the device configuration is changed).
+       If that happens the clients need to wait for some time, go back to step 2, and attempt reconnecting to the
+       service. The example app shows how to do that.
+4. The application must properly dispose the `Uplink` instance when it is no longer needed using the `dispose` method.
+
+#### Generate `.aar`
+
+The client sdk can be exported as an aar package that can be easily loaded into an Android project by running the
+following command:
+
 ```sh
-./gradlew build
+./gradlew :lib:build
 ```
-
-## How to use `uplink-android` in your app?
-1. Build the `uplink-release.aar` file and copy it into their app's `src/main/libs` folder.
-2. One can import the library in their own app by adding the following line to their app's `build.gradle` file:
-```gradle
-dependencies {
-    implementation file('path/to/src/main/libs/uplink-release.aar')
-}
-```
-3. Create an uplink object inside the appropriate `MainActivity.java` file:
-```java
-import io.bytebeam.uplink.Uplink;
-
-class MainActivity extends AppCompatActivity {
-    private Uplink uplink;
-    ...
-}
-```
-4. Configure and start the uplink instance where appropriate, an example is [included here](https://github.com/bytebeamio/uplink/blob/main/example/dummy.JSON):
-```java
-// A string containing JSON formatted uplink config.
-String configFile = "{\n" +
-    "   \"project_id\": \"abc\",\n" +
-    "   \"broker\": \"broker.example.com\",\n" +
-    "   \"port\": 8883,\n" +
-    "   \"device_id\": \"123\",\n" +
-    "   \"authentication\": {\n" +
-    "       \"ca_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
-    "       \"device_certificate\": \"-----BEGIN CERTIFICATE----------END CERTIFICATE-----\\n\",\n" +
-    "       \"device_private_key\": \"-----BEGIN RSA PRIVATE KEY----------END RSA PRIVATE KEY-----\\n\"\n" +
-    "   }\n" +
-    "}";
-// Get base folder path for application
-String baseFolder = getBaseContext().getExternalFilesDir("").getPath();
-
-try {
-    ConfigBuilder config = new ConfigBuilder(configFile)
-                        .setOta(true, baseFolder + "/ota-file")
-                        .setPersistence(baseFolder + "/uplink", 104857600, 3);
-    uplink = new Uplink(config.build());
-} catch (Exception e) {
-    ...
-}
-```
-5. Once configured and connected to a broker, you can send data by using the `Payload` format as [described here](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#streamed-data):
-```java
-try {
-    JSONObject data = new JSONObject(); // JSON object that carries data to be sent to stream_name
-    data.put("field", "value");
-    UplinkPayload payload = new UplinkPayload("stream_name", timestamp, sequence, String.valueof(data));
-    uplink.send(data);
-} catch (Exception e) {
-    ...
-}
-```
-6. For your application to be able to receive an [`Action`](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action) through the uplink instance(received through MQTT), you should pass an object that implements the `ActionCallback` interface to the `subscribe()` method as such:
-```java
-class ActionRecvr implements ActionCallback {
-    ...
-    @Override
-    public void recvdAction(UplinkAction action) {
-        // action contains information that can be used by your app to execute operations. See uplink application docs for more info.
-        String id = action.getId();
-        String payload = action.getPayload();
-    }
-}
-
-// Inside MainActivity class
-ActionRecvr recv; // Considered to be properly initialized
-try {
-    uplink.subscribe(recv);
-} catch (Exception e) {
-    ...
-}
-```
-> **NOTE**: The `MainActivity` class itself can also be written such that it implements `ActionCallback` and hence you can subscribe by passing a reference to itself, using `this` keyword as is demonstrated within the demo app, [in `MainActivity.java`](demo/src/main/java/io/bytebeam/demo/MainActivity.java#L119).
-
-You could respond to `Action`s by sending [`ActionResponse`s](https://github.com/bytebeamio/uplink/blob/main/docs/apps.md#action-response) which can be created using the `ActionResponse` class:
-```java
-// A response to indicate action's progress
-ActionResponse response = new ActionResponse(id, "Running", 10);
-// A response to indicate action's successful completion
-response = ActionResponse.success(id);
-// A response to indicate action's failed completion, along with error
-Exception e1 = new Exception("Error: 1");
-response = ActionResponse.failure(id, e1.toString());
-// You can carry multiple errors in a single response
-Exception e2 = new Exception("Error: 2");
-response = ActionResponse.add_error(response, e2.toString());
-try {
-    uplink.respond(response);
-} catch (Exception e) {
-    ...
-}
-```
-
-## How to run the demo application?
-We have provided in this repo, a demo application that to an extent demonstrates how you can use the library. You can compile and run in on an emulator or personal developer device of your choice, by using the Build and Run utilities provided within Android Studio.

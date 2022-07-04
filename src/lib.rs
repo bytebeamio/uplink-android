@@ -1,258 +1,173 @@
-#![allow(
-    clippy::enum_variant_names,
-    clippy::unused_unit,
-    clippy::let_and_return,
-    clippy::not_unsafe_ptr_arg_deref,
-    clippy::cast_lossless,
-    clippy::blacklisted_name,
-    clippy::too_many_arguments,
-    clippy::trivially_copy_pass_by_ref,
-    clippy::let_unit_value,
-    clippy::clone_on_copy
-)]
-
 use std::collections::HashMap;
 use std::sync::Arc;
+use jni::JNIEnv;
+use jni::objects::{JClass, JObject, JString, JValue};
+use jni_sys::{jboolean, jlong, jobject};
+use log::{debug, error, info, Level};
+use uplink::{Config, Payload, Stream, Uplink};
+use uplink::config::initalize_config;
+use crate::bridge::AndroidBridge;
+use crate::jni_helpers::{FromJava};
 
-use figment::providers::{Data, Json, Toml};
-use figment::Figment;
-use flume::{Receiver, Sender};
-use log::{error, info};
+mod bridge;
+mod jni_helpers;
 
-use uplink::config::{Config, Ota, Persistence, Stats};
-use uplink::{Action, ActionResponse, Package, Payload, Stream};
-
-const DEFAULT_CONFIG: &'static str = r#"
-    bridge_port = 5555
-    max_packet_size = 102400
-    max_inflight = 100
-
-    # Whitelist of binaries which uplink can spawn as a process
-    # This makes sure that user is protected against random actions
-    # triggered from cloud.
-    actions = ["tunshell"]
-
-    [streams.metrics]
-    topic = "/tenants/{tenant_id}/devices/{device_id}/events/metrics/jsonarray"
-    buf_size = 10
-
-    # Action status stream from status messages from bridge
-    [streams.action_status]
-    topic = "/tenants/{tenant_id}/devices/{device_id}/action/status"
-    buf_size = 1
-
-    [ota]
-    enabled = false
-    path = "/var/tmp/ota-file"
-
-    [stats]
-    enabled = false
-    process_names = ["uplink"]
-    update_period = 5
-"#;
-
-pub trait ActionCallback {
-    fn recvd_action(&self, action: UplinkAction);
-}
-
-struct CB(pub Box<dyn ActionCallback>);
-
-unsafe impl Send for CB {}
-
-pub struct UplinkConfig {
-    inner: Config,
-}
-
-impl UplinkConfig {
-    pub fn new(config: String) -> Result<UplinkConfig, String> {
-        Ok(UplinkConfig {
-            inner: Figment::new()
-                .merge(Data::<Toml>::string(&DEFAULT_CONFIG))
-                .merge(Data::<Json>::string(&config))
-                .extract()
-                .map_err(|e| e.to_string())?,
-        })
-    }
-
-    pub fn set_ota(&mut self, enabled: bool, path: String) {
-        self.inner.ota = Ota { enabled, path };
-    }
-
-    pub fn set_stats(&mut self, enabled: bool, update_period: u64) {
-        self.inner.stats = Stats {
-            enabled,
-            process_names: vec![],
-            update_period,
-            stream_size: None,
-        };
-    }
-
-    // TODO: Add a method to insert `StreamConfig`s into inner.streams
-
-    pub fn add_to_stats(&mut self, app: String) {
-        self.inner.stats.process_names.push(app);
-    }
-
-    pub fn set_persistence(&mut self, path: String, max_file_size: usize, max_file_count: usize) {
-        let persistence = Persistence {
-            path,
-            max_file_size,
-            max_file_count,
-        };
-        self.inner.persistence = Some(persistence);
-    }
-}
-
-pub struct UplinkPayload {
-    inner: Payload,
-}
-
-impl UplinkPayload {
-    pub fn new(
-        stream: String,
-        timestamp: u64,
-        sequence: u32,
-        data: String,
-    ) -> Result<UplinkPayload, String> {
-        Ok(UplinkPayload {
-            inner: Payload {
-                stream,
-                timestamp,
-                sequence,
-                payload: serde_json::from_str(&data).map_err(|e| e.to_string())?,
-            },
-        })
-    }
-}
-
-pub struct UplinkAction {
-    inner: Action,
-}
-
-impl UplinkAction {
-    pub fn get_id(&self) -> &str {
-        &self.inner.action_id
-    }
-
-    pub fn get_payload(&self) -> &str {
-        &self.inner.payload
-    }
-
-    pub fn get_name(&self) -> &str {
-        &self.inner.name
-    }
-}
-
-pub struct Uplink {
+pub struct UplinkAndroidContext {
     config: Arc<Config>,
-    action_stream: Stream<ActionResponse>,
-    streams: HashMap<String, Stream<Payload>>,
-    bridge_rx: Receiver<Action>,
-    data_tx: Sender<Box<dyn Package>>,
+    uplink: Uplink,
+    bridge_partitions: HashMap<String, Stream<Payload>>,
 }
 
-impl Uplink {
-    pub fn new(config: UplinkConfig) -> Result<Uplink, String> {
-        #[cfg(target_os = "android")]
-        android_logger::init_once(
-            android_logger::Config::default()
-                .with_min_level(log::Level::Debug)
-                .with_tag("uplink"),
-        );
-        log_panics::init();
-        info!("init log system - done");
+impl UplinkAndroidContext {
+    pub fn push_payload(&mut self, payload: Payload) {
+        let partition = match self.bridge_partitions.get_mut(&payload.stream) {
+            Some(partition) => partition,
+            None => {
+                if self.bridge_partitions.keys().len() > 20 {
+                    error!("Failed to create {:?} stream. More than max 20 streams", payload.stream);
+                    return;
+                }
 
-        let mut config = config.inner;
-
-        if let Some(persistence) = &config.persistence {
-            std::fs::create_dir_all(&persistence.path).map_err(|e| e.to_string())?;
-        }
-        let tenant_id = config.project_id.trim();
-        let device_id = config.device_id.trim();
-        for config in config.streams.values_mut() {
-            let topic = str::replace(&config.topic, "{tenant_id}", tenant_id);
-            config.topic = topic;
-
-            let topic = str::replace(&config.topic, "{device_id}", device_id);
-            config.topic = topic;
-        }
-
-        info!("Config: {:#?}", config);
-        let config = Arc::new(config);
-
-        let mut uplink = uplink::Uplink::new(config.clone()).map_err(|e| e.to_string())?;
-        uplink.spawn().map_err(|e| e.to_string())?;
-
-        let mut streams = HashMap::new();
-
-        for (stream, cfg) in config.streams.iter() {
-            streams.insert(
-                stream.to_owned(),
-                Stream::new(
-                    stream.to_owned(),
-                    cfg.topic.to_owned(),
-                    cfg.buf_size,
-                    uplink.bridge_data_tx(),
-                ),
-            );
-        }
-
-        Ok(Uplink {
-            config,
-            action_stream: uplink.action_status(),
-            bridge_rx: uplink.bridge_action_rx(),
-            streams,
-            data_tx: uplink.bridge_data_tx(),
-        })
-    }
-
-    pub fn send(&mut self, payload: UplinkPayload) -> Result<(), String> {
-        let data = payload.inner;
-        match self.streams.get_mut(&data.stream) {
-            Some(x) => x.push(data).map_err(|e| e.to_string()),
-            _ => {
-                self.streams.insert(
-                    data.stream.to_owned(),
-                    Stream::dynamic(
-                        &data.stream,
-                        &self.config.project_id,
-                        &self.config.device_id,
-                        self.data_tx.clone(),
-                    ),
+                self.bridge_partitions.insert(
+                    payload.stream.clone(),
+                    Stream::dynamic(&payload.stream, &self.config.project_id, &self.config.device_id, self.uplink.bridge_data_tx()),
                 );
-
-                self.streams
-                    .get_mut(&data.stream)
-                    .unwrap()
-                    .push(data)
-                    .map_err(|e| e.to_string())
+                self.bridge_partitions.get_mut(&payload.stream).unwrap()
             }
+        };
+
+        if let Err(e) = partition.push(payload) {
+            error!("Failed to send data. Error = {:?}", e.to_string());
         }
     }
-
-    pub fn respond(&mut self, response: ActionResponse) -> Result<(), String> {
-        self.action_stream.push(response).map_err(|e| e.to_string())
-    }
-
-    pub fn subscribe(&mut self, cb: Box<dyn ActionCallback>) -> Result<(), String> {
-        let cb = CB(cb);
-        let bridge_rx = self.bridge_rx.clone();
-        std::thread::spawn(move || {
-            if let Err(e) = subscriber(cb, bridge_rx) {
-                error!("Error while handling callback: {}", e);
-            }
-        });
-
-        Ok(())
-    }
 }
 
-fn subscriber(cb: CB, bridge_rx: Receiver<Action>) -> Result<(), String> {
-    loop {
-        cb.0.recvd_action(UplinkAction {
-            inner: bridge_rx.recv().map_err(|e| e.to_string())?,
-        });
-    }
+lazy_static::lazy_static! {
+    pub static ref RUNTIME: tokio::runtime::Runtime =
+        tokio::runtime::Runtime::new().expect("Can't start Tokio runtime");
 }
 
-include!(concat!(env!("OUT_DIR"), "/java_glue.rs"));
+macro_rules! strace {
+    ($expr:expr) => ({
+        let result = $expr;
+        error!("{:?}", result);
+        result
+    })
+}
+
+#[no_mangle]
+pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
+    env: JNIEnv,
+    _: JClass,
+    auth_config: JString,
+    uplink_config: JString,
+    _enable_logging: jboolean,
+    action_callback: JObject,
+) -> jlong {
+    android_logger::init_once(
+        android_logger::Config::default()
+            .with_tag("NDK_MOD")
+            .with_min_level(Level::Trace),
+    );
+    log_panics::init();
+
+    let java_api = env.get_static_field(
+        "io/bytebeam/uplink/service/JavaApi",
+        "INSTANCE",
+        "Lio/bytebeam/uplink/service/JavaApi;",
+    )
+        .and_then(|f| f.l())
+        .and_then(|l| env.new_global_ref(l))
+        .unwrap();
+
+    let action_callback = env.new_global_ref(action_callback).unwrap();
+
+    let auth_config = String::from(env.get_string(auth_config).unwrap());
+    let uplink_config = String::from(env.get_string(uplink_config).unwrap());
+    debug!(target: "auth config", "{}", auth_config);
+    debug!(target: "uplink config", "{}", uplink_config);
+
+    let config = Arc::new(initalize_config(
+        auth_config.as_str(),
+        uplink_config.as_str(),
+    ).unwrap());
+
+    let mut uplink = Uplink::new(config.clone()).unwrap();
+    RUNTIME.block_on(uplink.spawn()).unwrap();
+
+    let jvm = env.get_java_vm().unwrap();
+    let mut bridge = {
+        let java_api = java_api.clone();
+        AndroidBridge::new(
+            uplink.bridge_action_rx(),
+            Box::new(move |action| {
+                let env = jvm.attach_current_thread().unwrap();
+                let uplink_action = env.call_method(
+                    java_api.as_obj(),
+                    "createUplinkAction",
+                    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/bytebeam/uplink/common/UplinkAction;",
+                    &[
+                        JValue::Object(*env.new_string(&action.action_id).unwrap()),
+                        JValue::Object(*env.new_string(&action.kind).unwrap()),
+                        JValue::Object(*env.new_string(&action.name).unwrap()),
+                        JValue::Object(*env.new_string(&action.payload).unwrap()),
+                    ],
+                ).unwrap();
+                env.call_method(
+                    &action_callback,
+                    "processAction",
+                    "(Lio/bytebeam/uplink/common/UplinkAction;)V",
+                    &[JValue::Object(uplink_action.l().unwrap())],
+                ).unwrap();
+            }),
+        )
+    };
+    RUNTIME.spawn(async move {
+        bridge.start().await.unwrap();
+    });
+
+    let mut bridge_partitions = HashMap::new();
+    for (stream, config) in config.streams.clone() {
+        bridge_partitions.insert(
+            stream.clone(),
+            Stream::new(stream, config.topic, config.buf_size, uplink.bridge_data_tx()),
+        );
+    }
+
+    Box::into_raw(Box::new(UplinkAndroidContext {
+        config,
+        uplink,
+        bridge_partitions,
+    })) as _
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_destroyUplink(
+    _: JNIEnv,
+    _: JClass,
+    context: jlong,
+) {
+    Box::from_raw(context as *mut UplinkAndroidContext);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_sendData(
+    env: JNIEnv,
+    _: JClass,
+    context: jlong,
+    payload: jobject,
+) {
+    let context = &mut *(context as *mut UplinkAndroidContext);
+    let payload = Payload::from_java(env, payload);
+
+    debug!("pushing payload: {:?}", payload);
+    context.push_payload(payload);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_crash(
+    _: JNIEnv,
+    _: JClass,
+) {
+    panic!("Crash requested");
+}
