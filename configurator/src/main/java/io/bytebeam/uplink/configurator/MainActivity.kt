@@ -2,7 +2,10 @@ package io.bytebeam.uplink.configurator
 
 import android.app.ActivityManager
 import android.app.AlertDialog
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Message
@@ -18,7 +21,7 @@ import org.json.JSONObject
 const val PICK_AUTH_CONFIG = 1
 const val TAG = "MainActivity"
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ServiceConnection {
     lateinit var statusView: TextView
     lateinit var selectBtn: Button
 
@@ -26,16 +29,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply()
+
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)
         selectBtn.setOnClickListener {
-            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            if (prefs.contains(PREFS_AUTH_CONFIG_NAME_KEY)) {
+            if (applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).contains(PREFS_AUTH_CONFIG_NAME_KEY)) {
                 AlertDialog.Builder(this)
                     .setTitle("Remove device config")
-                    .setMessage("This operation will restart the uplink service, the connected clients will have to reconnect") // Specifying a listener allows you to take an action before dismissing the dialog.
+                    .setMessage("This operation will restart the uplink service, the connected clients will have to reconnect")
                     .setPositiveButton(android.R.string.ok) { dialog, which ->
-                        prefs.edit().also {
+                        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
                             it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
                             it.remove(PREFS_AUTH_CONFIG_KEY)
                             it.apply()
@@ -47,28 +52,7 @@ class MainActivity : AppCompatActivity() {
                                 it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
                                 bindService(
                                     it,
-                                    object : ServiceConnection {
-                                        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                                            val sudoPass = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(PREFS_SERVICE_SUDO_PASS_KEY, "")
-                                            val messenger = Messenger(service)
-                                            messenger.send(
-                                                Message().also {
-                                                    it.data = Bundle().also {
-                                                        it.putString(DATA_KEY, sudoPass)
-                                                    }
-                                                }
-                                            )
-                                        }
-                                        override fun onServiceDisconnected(name: ComponentName?) {
-                                            Log.e(TAG, "onServiceDisconnected")
-                                        }
-                                        override fun onBindingDied(name: ComponentName?) {
-                                            Log.e(TAG, "onBindingDied")
-                                        }
-                                        override fun onNullBinding(name: ComponentName?) {
-                                            Log.e(TAG, "onNullBinding")
-                                        }
-                                    },
+                                    this,
                                     Context.BIND_AUTO_CREATE or Context.BIND_NOT_FOREGROUND
                                 )
                             }
@@ -95,7 +79,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val configName = prefs.getString(PREFS_AUTH_CONFIG_NAME_KEY, null)
         runOnUiThread {
             when (configName) {
@@ -134,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, "Invalid JSON", Toast.LENGTH_SHORT).show()
                             return
                         }
-                        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
+                        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
                             it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
                             it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
                             it.apply()
@@ -154,5 +138,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return false
+    }
+
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        val sudoPass = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(PREFS_SERVICE_SUDO_PASS_KEY, "")
+        val messenger = Messenger(service)
+        messenger.send(
+            Message().also {
+                it.what = STOP_SERVICE
+                it.data = Bundle().also {
+                    it.putString(DATA_KEY, sudoPass)
+                }
+            }
+        )
+        unbindService(this)
+    }
+
+    override fun onServiceDisconnected(name: ComponentName?) {
+        Log.e(TAG, "onServiceDisconnected")
+    }
+
+    override fun onBindingDied(name: ComponentName?) {
+        Log.e(TAG, "onBindingDied")
+    }
+
+    override fun onNullBinding(name: ComponentName?) {
+        unbindService(this)
     }
 }

@@ -106,8 +106,7 @@ public class Uplink implements ServiceConnection {
      * @throws UplinkTerminatedException if the uplink service has terminated for some reason
      */
     public void respondToAction(ActionResponse response) throws UplinkTerminatedException {
-        stateAssertion();
-        callMethod(SEND_DATA, response.toPayload());
+        sendData(response.toPayload());
     }
 
     /**
@@ -149,6 +148,7 @@ public class Uplink implements ServiceConnection {
         Log.i(TAG, "uplink service not ready");
         state = UplinkServiceState.NOT_READY;
         serviceStateCallback.onServiceNotConfigured();
+        context.unbindService(this);
     }
 
     private void stateAssertion() throws UplinkTerminatedException {

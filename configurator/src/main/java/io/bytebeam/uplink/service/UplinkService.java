@@ -22,34 +22,31 @@ public class UplinkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "client requested binding");
+        Log.d(TAG, "creating binder");
 
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        prefs.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply();
-
         String authConfig = prefs.getString(PREFS_AUTH_CONFIG_KEY, null);
         if (authConfig == null) {
             Log.d(TAG, "auth config not found");
+            new Handler(Looper.myLooper()).postDelayed(() -> {onUnbind(null);}, 200);
             return null;
         }
 
-        if (uplink == 0) {
-            uplink = NativeApi.createUplink(
-                    authConfig,
-                    String.format(
-                            "[persistence]\n" +
-                                    "path = \"%s/uplink\"\n" +
-                                    "\n" +
-                                    "[streams.battery_stream]\n" +
-                                    "topic = \"/tenants/{tenant_id}/devices/{device_id}/events/battery_level\"\n" +
-                                    "buf_size = 1\n",
-                            getApplicationContext().getFilesDir().getAbsolutePath()
-                    ),
-                    true,
-                    this::uplinkSubscription
-            );
-            Log.d(TAG, "uplink native context initialized");
-        }
+        uplink = NativeApi.createUplink(
+                authConfig,
+                String.format(
+                        "[persistence]\n" +
+                                "path = \"%s/uplink\"\n" +
+                                "\n" +
+                                "[streams.battery_stream]\n" +
+                                "topic = \"/tenants/{tenant_id}/devices/{device_id}/events/battery_level\"\n" +
+                                "buf_size = 1\n",
+                        getApplicationContext().getFilesDir().getAbsolutePath()
+                ),
+                true,
+                this::uplinkSubscription
+        );
+        Log.d(TAG, "uplink native context initialized");
 
         Log.d(TAG, "returning messenger");
         IBinder result = new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
@@ -93,10 +90,10 @@ public class UplinkService extends Service {
                 } else {
                     String pass = message.getData().getString(DATA_KEY, "");
                     if (!pass.equals(sudoPass)) {
-                        Log.e(TAG, "privileged operation key mismatch");
+                        Log.e(TAG, String.format("privileged operation key mismatch: %s != %s", pass, sudoPass));
                     } else {
                         Log.d(TAG, "stopping service");
-                        onUnbind(null);
+                        new Handler(Looper.myLooper()).postDelayed(() -> {onUnbind(null);}, 200);
                     }
                 }
                 break;
