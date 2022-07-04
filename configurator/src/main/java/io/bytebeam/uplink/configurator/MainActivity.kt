@@ -5,12 +5,14 @@ import android.app.AlertDialog
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import android.os.Message
+import android.os.Messenger
+import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import io.bytebeam.uplink.common.Constants
-import io.bytebeam.uplink.service.UplinkService
+import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
 
 const val PICK_AUTH_CONFIG = 1
@@ -27,31 +29,51 @@ class MainActivity : AppCompatActivity() {
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)
         selectBtn.setOnClickListener {
-            val prefs = getSharedPreferences(UplinkService.PREFS_NAME, Context.MODE_PRIVATE)
-            if (prefs.contains(UplinkService.PREFS_AUTH_CONFIG_NAME_KEY)) {
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (prefs.contains(PREFS_AUTH_CONFIG_NAME_KEY)) {
                 AlertDialog.Builder(this)
                     .setTitle("Remove device config")
                     .setMessage("This operation will restart the uplink service, the connected clients will have to reconnect") // Specifying a listener allows you to take an action before dismissing the dialog.
                     .setPositiveButton(android.R.string.ok) { dialog, which ->
                         prefs.edit().also {
-                            it.remove(UplinkService.PREFS_AUTH_CONFIG_NAME_KEY)
-                            it.remove(UplinkService.PREFS_AUTH_CONFIG_KEY)
+                            it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
+                            it.remove(PREFS_AUTH_CONFIG_KEY)
                             it.apply()
                         }
 
                         if (serviceRunning()) {
+                            Log.e(TAG, "stopping service")
                             Intent().also {
-                                it.component = ComponentName(Constants.CONFIGURATOR_APP_ID, Constants.UPLINK_SERVICE_ID)
-                                it.putExtra(UplinkService.KILL_COMMAND_TAG, true)
+                                it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
                                 bindService(
                                     it,
                                     object : ServiceConnection {
-                                        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {}
-                                        override fun onServiceDisconnected(name: ComponentName?) {}
+                                        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                                            val sudoPass = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(PREFS_SERVICE_SUDO_PASS_KEY, "")
+                                            val messenger = Messenger(service)
+                                            messenger.send(
+                                                Message().also {
+                                                    it.data = Bundle().also {
+                                                        it.putString(DATA_KEY, sudoPass)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                        override fun onServiceDisconnected(name: ComponentName?) {
+                                            Log.e(TAG, "onServiceDisconnected")
+                                        }
+                                        override fun onBindingDied(name: ComponentName?) {
+                                            Log.e(TAG, "onBindingDied")
+                                        }
+                                        override fun onNullBinding(name: ComponentName?) {
+                                            Log.e(TAG, "onNullBinding")
+                                        }
                                     },
                                     Context.BIND_AUTO_CREATE or Context.BIND_NOT_FOREGROUND
                                 )
                             }
+                        } else {
+                            Log.e(TAG, "service not running")
                         }
 
                         updateUI()
@@ -73,14 +95,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
-        val prefs = getSharedPreferences(UplinkService.PREFS_NAME, Context.MODE_PRIVATE)
-        val configName = prefs.getString(UplinkService.PREFS_AUTH_CONFIG_NAME_KEY, null)
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val configName = prefs.getString(PREFS_AUTH_CONFIG_NAME_KEY, null)
         runOnUiThread {
             when (configName) {
                 null -> {
                     statusView.text = "No device config selected"
                     selectBtn.text = "Select device config"
-                    selectBtn.setBackgroundColor(0xFFCCCCCC.toInt())
+                    selectBtn.setBackgroundColor(0xFF0022CC.toInt())
                 }
                 else -> {
                     statusView.text = "Service ready for $configName"
@@ -112,9 +134,9 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, "Invalid JSON", Toast.LENGTH_SHORT).show()
                             return
                         }
-                        getSharedPreferences(UplinkService.PREFS_NAME, Context.MODE_PRIVATE).edit().let {
-                            it.putString(UplinkService.PREFS_AUTH_CONFIG_NAME_KEY, configName)
-                            it.putString(UplinkService.PREFS_AUTH_CONFIG_KEY, jsonString)
+                        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
+                            it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
+                            it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
                             it.apply()
                         }
                         updateUI()
@@ -127,7 +149,7 @@ class MainActivity : AppCompatActivity() {
     fun serviceRunning(): Boolean {
         val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         for (info in am.getRunningServices(Int.MAX_VALUE)) {
-            if (info.service.equals(ComponentName(Constants.CONFIGURATOR_APP_ID, Constants.UPLINK_SERVICE_ID))) {
+            if (info.service.equals(ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID))) {
                 return true
             }
         }

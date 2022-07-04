@@ -8,8 +8,6 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
-import io.bytebeam.uplink.common.Utils;
-import io.bytebeam.uplink.configurator.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +16,6 @@ import static io.bytebeam.uplink.common.Constants.*;
 
 public class UplinkService extends Service {
     public static final String TAG = "UplinkService";
-    public static final String KILL_COMMAND_TAG = "KILL_SERVICE";
-    public static final String PREFS_NAME = "configuration";
-    public static final String PREFS_AUTH_CONFIG_KEY = "auth_config";
-    public static final String PREFS_AUTH_CONFIG_NAME_KEY = "auth_config_name";
     List<Messenger> subscribers = new ArrayList<>();
     long uplink = 0;
 
@@ -29,17 +23,13 @@ public class UplinkService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "client requested binding");
-        if (intent.getBooleanExtra(KILL_COMMAND_TAG, false)) {
-            Log.d(TAG, "killing service");
-            onUnbind(null);
-            return null;
-        }
 
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply();
+
         String authConfig = prefs.getString(PREFS_AUTH_CONFIG_KEY, null);
         if (authConfig == null) {
-            Log.d(TAG, "auth config not found, stopping service");
-//            onUnbind(null);
+            Log.d(TAG, "auth config not found");
             return null;
         }
 
@@ -96,9 +86,19 @@ public class UplinkService extends Service {
                 Log.d(TAG, "adding a subscriber");
                 subscribers.add(message.replyTo);
                 break;
-            case CRASH:
-                Log.w(TAG, "crashing the uplink service");
-                NativeApi.crash();
+            case STOP_SERVICE:
+                String sudoPass = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(PREFS_SERVICE_SUDO_PASS_KEY, null);
+                if (sudoPass == null) {
+                    Log.e(TAG, "Illegal service state error, privileged operation key not found");
+                } else {
+                    String pass = message.getData().getString(DATA_KEY, "");
+                    if (!pass.equals(sudoPass)) {
+                        Log.e(TAG, "privileged operation key mismatch");
+                    } else {
+                        Log.d(TAG, "stopping service");
+                        onUnbind(null);
+                    }
+                }
                 break;
             default:
                 throw new IllegalArgumentException();
