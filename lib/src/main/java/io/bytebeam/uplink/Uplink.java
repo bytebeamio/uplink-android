@@ -118,13 +118,22 @@ public class Uplink implements ServiceConnection {
      * The instance must not be used after this method is called
      */
     public void dispose() {
-        try {
-            stateAssertion();
-            context.unbindService(this);
-            state = UplinkServiceState.FINISHED;
-        } catch (UplinkTerminatedException e) {
-            Log.w(TAG, "Uplink service terminated before dispose was called");
-        } catch (UplinkNotConfiguredException e) {}
+        switch (state) {
+            case CONNECTED:
+                context.unbindService(this);
+                state = UplinkServiceState.FINISHED;
+                break;
+            case SERVICE_NOT_CONFIGURED:
+            case SERVICE_STOPPED:
+                // do nothing since the connection has already been unbound
+                break;
+            case UNINITIALIZED:
+                context.unbindService(this);
+                Log.e(TAG, "Attempting to dispose an uninitialized instance");
+            case FINISHED:
+                Log.e(TAG, "Attempted to dispose an Uplink instance twice");
+                break;
+        }
     }
 
     @Override
@@ -136,8 +145,9 @@ public class Uplink implements ServiceConnection {
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        context.unbindService(this);
         if (state != UplinkServiceState.FINISHED) {
-            state = UplinkServiceState.CRASHED;
+            state = UplinkServiceState.SERVICE_STOPPED;
         }
     }
 
@@ -149,16 +159,16 @@ public class Uplink implements ServiceConnection {
     @Override
     public void onNullBinding(ComponentName name) {
         Log.i(TAG, "uplink service not ready");
-        state = UplinkServiceState.NOT_READY;
+        state = UplinkServiceState.SERVICE_NOT_CONFIGURED;
         serviceStateCallback.onServiceNotConfigured();
         context.unbindService(this);
     }
 
     private void stateAssertion() throws UplinkTerminatedException {
         switch (state) {
-            case NOT_READY:
+            case SERVICE_NOT_CONFIGURED:
                 throw new UplinkNotConfiguredException();
-            case CRASHED:
+            case SERVICE_STOPPED:
                 throw new UplinkTerminatedException();
             case UNINITIALIZED:
                 throw new IllegalStateException("attempt to use service before initialization is complete");

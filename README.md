@@ -8,7 +8,7 @@ The project has two main modules:
 
 ### Configurator app
 
-This app provides the uplink service that can be used to launch and communicate with the backend. Other apps can
+This app provides the uplink service that can be used to communicate with the backend. Other apps can
 bind to this service and use it to communicate with the selected backend. This app also provides the authorization
 configuration for the uplink bridge, which you have to select using the application UI.
 
@@ -34,6 +34,7 @@ steps to use this library:
     1. `Uplink.subscribe(ActionSubscriber)` - Subscribe to action targeting this device.
     2. `Uplink.sendData(UplinkPayload)` - Send some data to the backend.
     3. `Uplink.respondToAction(ActionResponse)` - Respond to an action that the device received from the backend.
+   
        Each of these methods can throw an `UplinkTerminatedException` if the uplink service is terminated for some
        reason (the user stops it or the device configuration is changed).
        If that happens the clients need to wait for some time, go back to step 2, and attempt reconnecting to the

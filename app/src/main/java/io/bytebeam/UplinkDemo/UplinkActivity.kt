@@ -38,10 +38,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
     private fun initUplink() {
         log("connecting to uplink service")
         try {
-            uplink = Uplink(
-                this,
-                this
-            )
+            uplink = Uplink(this, this)
         } catch (e: ConfiguratorUnavailableException) {
             Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_SHORT).show()
             finish()
@@ -54,7 +51,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
     }
 
     override fun onUplinkReady() {
-//        uplink?.subscribe(this)
+        uplink?.subscribe(this)
         Executors.newSingleThreadExecutor().execute {
             var idx = 1
             // This loop will run as long as uplink client is connected
