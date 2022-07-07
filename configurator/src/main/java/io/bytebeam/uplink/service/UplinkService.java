@@ -53,8 +53,13 @@ public class UplinkService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "returning messenger");
-        return new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
+        if (uplink == 0) {
+            Log.d(TAG, "activity not ready to start");
+            return null;
+        } else {
+            Log.d(TAG, "returning messenger");
+            return new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
+        }
     }
 
     @Override
@@ -97,10 +102,10 @@ public class UplinkService extends Service {
                 } else {
                     String pass = message.getData().getString(DATA_KEY, "");
                     if (!pass.equals(sudoPass)) {
-                        Log.e(TAG, String.format("privileged operation key mismatch: %s != %s", pass, sudoPass));
+                        Log.e(TAG, String.format("privileged operation key mismatch: %s is not valid", pass));
                     } else {
                         Log.d(TAG, "stopping service");
-                        stopSelf();
+                        end();
                     }
                 }
                 break;

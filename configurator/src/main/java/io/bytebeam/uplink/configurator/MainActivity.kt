@@ -20,6 +20,8 @@ import org.json.JSONObject
 
 const val PICK_AUTH_CONFIG = 1
 const val TAG = "MainActivity"
+const val PREFS_NAME = "sharedPrefs"
+const val PREFS_SERVICE_RUNNING_KEY = "serviceState"
 
 enum class ServiceState {
     STOPPING,
@@ -37,6 +39,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         get() = _serviceState
         set(newState) {
             _serviceState = newState
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
+                it.putBoolean(PREFS_SERVICE_RUNNING_KEY, _serviceState == ServiceState.STARTED)
+                it.apply()
+            }
             updateUI()
         }
 
