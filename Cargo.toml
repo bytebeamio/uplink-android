@@ -15,7 +15,7 @@ android_logger = "0.11.0"
 log-panics = "2.0"
 lazy_static = "1.4.0"
 tokio = { version = "1", features = ["full"] }
-uplink = { git = "https://github.com/bmcpt/uplink", branch = "android_adjustments" }
+uplink = { git = "https://github.com/bytebeamio/uplink", rev = "cd78a430ffd430114f6f69bacb8963f087f2316e" }
 
 [lib]
 name = "uplink_android"

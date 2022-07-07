@@ -5,7 +5,7 @@ use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
 use log::{debug, error, info, Level};
 use uplink::{Config, Payload, Stream, Uplink};
-use uplink::config::initalize_config;
+use uplink::config::initialize;
 use crate::bridge::AndroidBridge;
 use crate::jni_helpers::{FromJava};
 
@@ -87,13 +87,13 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     debug!(target: "auth config", "{}", auth_config);
     debug!(target: "uplink config", "{}", uplink_config);
 
-    let config = Arc::new(initalize_config(
+    let config = Arc::new(initialize(
         auth_config.as_str(),
         uplink_config.as_str(),
     ).unwrap());
 
     let mut uplink = Uplink::new(config.clone()).unwrap();
-    RUNTIME.block_on(uplink.spawn()).unwrap();
+    uplink.spawn().unwrap();
 
     let jvm = env.get_java_vm().unwrap();
     let mut bridge = {
