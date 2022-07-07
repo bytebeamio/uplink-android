@@ -402,11 +402,10 @@ dependencies = [
 [[package]]
 name = "disk"
 version = "0.1.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#9eb37c66ed82c9cf06b0515946e8af338b8dfc5a"
+source = "git+https://github.com/bytebeamio/uplink?rev=cd78a430ffd430114f6f69bacb8963f087f2316e#cd78a430ffd430114f6f69bacb8963f087f2316e"
 dependencies = [
  "bytes 1.1.0",
  "log",
- "seahash",
 ]
 
 [[package]]
@@ -1780,12 +1779,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "seahash"
-version = "4.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b"
-
-[[package]]
 name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2282,6 +2275,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "pin-project-lite 0.2.9",
+ "slab",
  "tokio 1.19.2",
  "tracing",
 ]
@@ -2475,7 +2469,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 [[package]]
 name = "uplink"
 version = "1.2.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_adjustments#9eb37c66ed82c9cf06b0515946e8af338b8dfc5a"
+source = "git+https://github.com/bytebeamio/uplink?rev=cd78a430ffd430114f6f69bacb8963f087f2316e#cd78a430ffd430114f6f69bacb8963f087f2316e"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",

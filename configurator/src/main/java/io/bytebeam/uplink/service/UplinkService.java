@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.*;
 import android.util.Log;
+import android.widget.Toast;
 import androidx.annotation.Nullable;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
@@ -19,17 +20,15 @@ public class UplinkService extends Service {
     List<Messenger> subscribers = new ArrayList<>();
     long uplink = 0;
 
-    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        Log.d(TAG, "creating binder");
-
+    public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String authConfig = prefs.getString(PREFS_AUTH_CONFIG_KEY, null);
         if (authConfig == null) {
-            Log.d(TAG, "auth config not found");
-            new Handler(Looper.myLooper()).postDelayed(() -> {onUnbind(null);}, 200);
-            return null;
+            Log.d(TAG, "device config not found");
+            Toast.makeText(this, "device config not found", Toast.LENGTH_SHORT).show();
+            stopSelf();
+            return START_NOT_STICKY;
         }
 
         uplink = NativeApi.createUplink(
@@ -48,13 +47,22 @@ public class UplinkService extends Service {
         );
         Log.d(TAG, "uplink native context initialized");
 
+        return START_REDELIVER_INTENT;
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
         Log.d(TAG, "returning messenger");
-        IBinder result = new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
-        return result;
+        return new Messenger(new Handler(Looper.myLooper(), this::handleMessage)).getBinder();
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
+    public void onDestroy() {
+        new Handler(Looper.myLooper()).postDelayed(this::end, 200);
+    }
+
+    private void end() {
         Log.d(TAG, "shutting down uplink service and process");
         subscribers.clear();
         if (uplink != 0) {
@@ -63,7 +71,6 @@ public class UplinkService extends Service {
         }
         // forcefully kill the service process to allow the cleanup of the native resources
         System.exit(0);
-        return false;
     }
 
     private boolean handleMessage(Message message) {
@@ -93,7 +100,7 @@ public class UplinkService extends Service {
                         Log.e(TAG, String.format("privileged operation key mismatch: %s != %s", pass, sudoPass));
                     } else {
                         Log.d(TAG, "stopping service");
-                        new Handler(Looper.myLooper()).postDelayed(() -> {onUnbind(null);}, 200);
+                        stopSelf();
                     }
                 }
                 break;

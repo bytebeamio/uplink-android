@@ -21,21 +21,47 @@ import org.json.JSONObject
 const val PICK_AUTH_CONFIG = 1
 const val TAG = "MainActivity"
 
+enum class ServiceState {
+    STOPPING,
+    STOPPED,
+    STARTING,
+    STARTED,
+}
+
 class MainActivity : AppCompatActivity(), ServiceConnection {
     lateinit var statusView: TextView
     lateinit var selectBtn: Button
+
+    private lateinit var _serviceState: ServiceState
+    var serviceState: ServiceState
+        get() = _serviceState
+        set(newState) {
+            _serviceState = newState
+            updateUI()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply()
-
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)
+
+        serviceState = if (serviceRunning()) {
+            ServiceState.STARTED
+        } else {
+            ServiceState.STOPPED
+        }
+
+        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).let {
+            if (!it.contains(PREFS_SERVICE_SUDO_PASS_KEY)) {
+                it.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply()
+            }
+        }
+
         selectBtn.setOnClickListener {
-            if (applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).contains(PREFS_AUTH_CONFIG_NAME_KEY)) {
+            if (serviceRunning()) {
+                serviceState = ServiceState.STOPPING
                 AlertDialog.Builder(this)
                     .setTitle("Remove device config")
                     .setMessage("This operation will restart the uplink service, the connected clients will have to reconnect")
@@ -46,52 +72,69 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                             it.apply()
                         }
 
-                        if (serviceRunning()) {
-                            Log.e(TAG, "stopping service")
-                            Intent().also {
-                                it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
-                                bindService(
-                                    it,
-                                    this,
-                                    Context.BIND_AUTO_CREATE or Context.BIND_NOT_FOREGROUND
-                                )
-                            }
-                        } else {
-                            Log.e(TAG, "service not running")
+                        Log.d(TAG, "stopping service")
+                        Intent().also {
+                            it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                            bindService(
+                                it,
+                                this,
+                                Context.BIND_NOT_FOREGROUND
+                            )
                         }
-
-                        updateUI()
                     }
-                    .setNegativeButton(android.R.string.cancel, null)
+                    .setNegativeButton(android.R.string.cancel) { _, _ ->
+                        serviceState = ServiceState.STARTED
+                    }
+                    .setOnDismissListener {
+                        when (serviceState) {
+                            ServiceState.STARTED -> {}
+                            ServiceState.STOPPED -> {}
+                            ServiceState.STOPPING -> {
+                                serviceState = ServiceState.STARTED
+                            }
+                            ServiceState.STARTING -> throw IllegalStateException()
+                        }
+                    }
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show()
             } else {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/json"
-                }
-
-                startActivityForResult(intent, PICK_AUTH_CONFIG)
+                serviceState = ServiceState.STARTING
+                startActivityForResult(
+                    Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "application/json"
+                    },
+                    PICK_AUTH_CONFIG
+                )
             }
         }
-
-        updateUI()
     }
 
     private fun updateUI() {
         val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val configName = prefs.getString(PREFS_AUTH_CONFIG_NAME_KEY, null)
         runOnUiThread {
-            when (configName) {
-                null -> {
-                    statusView.text = "No device config selected"
+            when (serviceState) {
+                ServiceState.STOPPING -> {
+                    statusView.text = "Stopping service"
+                    selectBtn.isEnabled = false
+                }
+                ServiceState.STOPPED -> {
+                    statusView.text = "Service stopped"
                     selectBtn.text = "Select device config"
+                    selectBtn.isEnabled = true
                     selectBtn.setBackgroundColor(0xFF0022CC.toInt())
                 }
-                else -> {
-                    statusView.text = "Service ready for $configName"
-                    selectBtn.text = "Remove device config"
+                ServiceState.STARTING -> {
+                    statusView.text = "Starting service"
+                    selectBtn.isEnabled = false
+                }
+                ServiceState.STARTED -> {
+                    statusView.text = "Service running for $configName"
+                    selectBtn.text = "Stop service"
+                    selectBtn.isEnabled = true
                     selectBtn.setBackgroundColor(0xFFFF3300.toInt())
+
                 }
             }
         }
@@ -123,8 +166,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                             it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
                             it.apply()
                         }
-                        updateUI()
+                        startService(Intent().also {
+                            it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                        })
+                        serviceState = ServiceState.STARTED
                     }
+                } else {
+                    serviceState = ServiceState.STOPPED
                 }
             }
         }
@@ -152,15 +200,18 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 }
             }
         )
+        serviceState = ServiceState.STOPPED
         unbindService(this)
     }
 
     override fun onServiceDisconnected(name: ComponentName?) {
-        Log.e(TAG, "onServiceDisconnected")
+        Log.d(TAG, "onServiceDisconnected")
+        unbindService(this)
     }
 
     override fun onBindingDied(name: ComponentName?) {
-        Log.e(TAG, "onBindingDied")
+        Log.d(TAG, "onBindingDied")
+        unbindService(this)
     }
 
     override fun onNullBinding(name: ComponentName?) {
