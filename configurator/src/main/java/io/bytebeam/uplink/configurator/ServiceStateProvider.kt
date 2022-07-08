@@ -6,6 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import io.bytebeam.uplink.common.Constants.PREFS_NAME
 
 class ServiceStateProvider : ContentProvider() {
     override fun onCreate(): Boolean {
