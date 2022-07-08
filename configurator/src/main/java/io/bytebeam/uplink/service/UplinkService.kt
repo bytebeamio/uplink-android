@@ -61,8 +61,10 @@ class UplinkService : Service() {
         val startAppIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java),
-            Intent.FLAG_ACTIVITY_NEW_TASK
+            Intent(this, MainActivity::class.java).also {
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+            PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setOngoing(true)
