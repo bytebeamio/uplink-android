@@ -1,14 +1,11 @@
 package io.bytebeam.UplinkDemo
 
 import android.content.Intent
-import android.content.res.Resources
 import android.os.Bundle
 import android.widget.Button
-import androidx.annotation.RawRes
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-
-fun Resources.getRawTextFile(@RawRes id: Int) =
-    openRawResource(id).bufferedReader().use { it.readText() }
+import io.bytebeam.uplink.Uplink
 
 const val TAG = "==APP=="
 
@@ -22,5 +19,10 @@ class MainActivity : AppCompatActivity() {
                 startActivity(it)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        findViewById<TextView>(R.id.statusView).text = "configuratorAvaialable: ${Uplink.configuratorAvailable(this)}\nserviceRunning: ${Uplink.serviceRunning(this)}";
     }
 }

@@ -6,10 +6,4 @@ public interface UplinkStateCallback {
      * ready to be used
      */
     void onUplinkReady();
-
-    /**
-     * Called if the user hasn't initialized the uplink service using
-     * the configurator app
-     */
-    void onServiceNotConfigured();
 }

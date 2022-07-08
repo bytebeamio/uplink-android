@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="io.bytebeam.uplink.configurator">
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
             android:allowBackup="true"
@@ -11,11 +12,19 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.Uplink">
+
+        <provider
+                android:enabled="true"
+                android:exported="true"
+                android:authorities="io.bytebeam.uplink.servicestate"
+                android:name="io.bytebeam.uplink.configurator.ServiceStateProvider" />
+
         <activity
-                android:name="io.bytebeam.uplink.configurator.MainActivity"
+                android:name=".MainActivity"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
@@ -24,8 +33,7 @@
                 android:name="io.bytebeam.uplink.service.UplinkService"
                 android:enabled="true"
                 android:exported="true"
-                android:process=":uplink_service"
-        />
+                android:process=":uplink_service"/>
     </application>
 
 </manifest>

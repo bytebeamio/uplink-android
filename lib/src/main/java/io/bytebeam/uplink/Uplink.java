@@ -5,11 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ResolveInfo;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.*;
 import android.util.Log;
 import io.bytebeam.uplink.common.*;
-import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException;
-import io.bytebeam.uplink.common.exceptions.UplinkNotConfiguredException;
+import io.bytebeam.uplink.common.exceptions.ConfiguratorNotInstalledException;
+import io.bytebeam.uplink.common.exceptions.UplinkServiceNotRunningException;
 import io.bytebeam.uplink.common.exceptions.UplinkTerminatedException;
 
 import java.util.List;
@@ -36,9 +38,12 @@ public class Uplink implements ServiceConnection {
     public Uplink(
             Context context,
             UplinkStateCallback uplinkReadyCallback
-    ) throws ConfiguratorUnavailableException {
+    ) throws ConfiguratorNotInstalledException, UplinkServiceNotRunningException {
         if (!configuratorAvailable(context)) {
-            throw new ConfiguratorUnavailableException();
+            throw new ConfiguratorNotInstalledException();
+        }
+        if (!serviceRunning(context)) {
+            throw new UplinkServiceNotRunningException();
         }
         this.context = context;
         this.serviceStateCallback = uplinkReadyCallback;
@@ -118,22 +123,8 @@ public class Uplink implements ServiceConnection {
      * The instance must not be used after this method is called
      */
     public void dispose() {
-        switch (state) {
-            case CONNECTED:
-                context.unbindService(this);
-                state = UplinkServiceState.FINISHED;
-                break;
-            case SERVICE_NOT_CONFIGURED:
-            case SERVICE_STOPPED:
-                // do nothing since the connection has already been unbound
-                break;
-            case UNINITIALIZED:
-                context.unbindService(this);
-                Log.e(TAG, "Attempting to dispose an uninitialized instance");
-            case FINISHED:
-                Log.e(TAG, "Attempted to dispose an Uplink instance twice");
-                break;
-        }
+        state = UplinkServiceState.DISPOSED;
+        context.unbindService(this);
     }
 
     @Override
@@ -145,34 +136,32 @@ public class Uplink implements ServiceConnection {
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        context.unbindService(this);
-        if (state != UplinkServiceState.FINISHED) {
+        if (state != UplinkServiceState.DISPOSED) {
             state = UplinkServiceState.SERVICE_STOPPED;
         }
+        context.unbindService(this);
     }
 
     @Override
     public void onBindingDied(ComponentName name) {
         Log.e(TAG, "uplink binding died");
+        context.unbindService(this);
     }
 
     @Override
     public void onNullBinding(ComponentName name) {
         Log.i(TAG, "uplink service not ready");
-        state = UplinkServiceState.SERVICE_NOT_CONFIGURED;
-        serviceStateCallback.onServiceNotConfigured();
+        state = UplinkServiceState.SERVICE_STOPPED;
         context.unbindService(this);
     }
 
     private void stateAssertion() throws UplinkTerminatedException {
         switch (state) {
-            case SERVICE_NOT_CONFIGURED:
-                throw new UplinkNotConfiguredException();
             case SERVICE_STOPPED:
                 throw new UplinkTerminatedException();
             case UNINITIALIZED:
                 throw new IllegalStateException("attempt to use service before initialization is complete");
-            case FINISHED:
+            case DISPOSED:
                 throw new IllegalStateException("attempt to use service after it was disposed");
         }
     }
@@ -181,8 +170,19 @@ public class Uplink implements ServiceConnection {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID));
         List<ResolveInfo> services = context.getPackageManager().queryIntentServices(intent, 0);
-        Log.e(TAG, String.format("Available services: %s", services.toString()));
+        Log.d(TAG, String.format("Available services: %s", services.toString()));
         return services.size() != 0;
+    }
+
+    public static boolean serviceRunning(Context context) {
+        Cursor cursor = context.getContentResolver().query(
+                Uri.parse("content://io.bytebeam.uplink.servicestate"),
+                new String[] {},
+                null,
+                new String[] {},
+                null
+        );
+        return cursor != null;
     }
 }
 
