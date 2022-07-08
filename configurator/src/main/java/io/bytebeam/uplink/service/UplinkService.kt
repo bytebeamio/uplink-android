@@ -54,7 +54,7 @@ class UplinkService : Service() {
             NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 channelName,
-                NotificationManager.IMPORTANCE_MAX
+                NotificationManager.IMPORTANCE_DEFAULT
             )
         )
 
@@ -69,7 +69,7 @@ class UplinkService : Service() {
             .setChannelId(NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Uplink service")
             .setContentText("Service is running and ready to be used")
-            .setPriority(NotificationManager.IMPORTANCE_MAX)
+            .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(startAppIntent)
             .build()

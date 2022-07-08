@@ -10,15 +10,11 @@ public enum UplinkServiceState {
      */
     CONNECTED,
     /**
-     * No device configuration selected in configurator app
-     */
-    SERVICE_NOT_CONFIGURED,
-    /**
      * The service has stopped
      */
     SERVICE_STOPPED,
     /**
-     * The client has disconnected from the service
+     * Dispose method has been called
      */
-    FINISHED
+    DISPOSED
 }

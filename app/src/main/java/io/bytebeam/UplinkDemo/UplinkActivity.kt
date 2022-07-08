@@ -3,12 +3,10 @@ package io.bytebeam.UplinkDemo
 import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
-import io.bytebeam.uplink.common.exceptions.ConfiguratorUnavailableException
+import io.bytebeam.uplink.common.exceptions.ConfiguratorNotInstalledException
 import io.bytebeam.uplink.Uplink
 import io.bytebeam.uplink.UplinkStateCallback
 import io.bytebeam.uplink.UplinkServiceState
@@ -16,6 +14,7 @@ import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
 import io.bytebeam.uplink.common.UplinkAction
 import io.bytebeam.uplink.common.UplinkPayload
+import io.bytebeam.uplink.common.exceptions.UplinkServiceNotRunningException
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
@@ -39,8 +38,11 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
         log("connecting to uplink service")
         try {
             uplink = Uplink(this, this)
-        } catch (e: ConfiguratorUnavailableException) {
-            Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_SHORT).show()
+        } catch (e: ConfiguratorNotInstalledException) {
+            Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_LONG).show()
+            finish()
+        } catch (e: UplinkServiceNotRunningException) {
+            Toast.makeText(this, "You need to start the uplink service using the configurator app", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -87,13 +89,6 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
             Thread.sleep(15000)
             initUplink()
         }
-    }
-
-    override fun onServiceNotConfigured() {
-        log("uplink service not ready, waiting...")
-        Handler(Looper.myLooper()!!).postDelayed({
-            initUplink()
-        }, 3000)
     }
 
     override fun processAction(action: UplinkAction) {
