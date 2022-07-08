@@ -68,6 +68,8 @@ archTriplets.each { arch, target ->
 
     // Build with cargo
     tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "cargo-output-dir-${arch}") {
+        inputs.files "${rustBasePath}/Cargo.toml", "${rustBasePath}/src"
+        outputs.files "${rustBasePath}/targets/${target}/debug/libuplink_android.so"
         workingDir rustBasePath
         commandLine 'cross', 'build', "--target=${target}"
     }

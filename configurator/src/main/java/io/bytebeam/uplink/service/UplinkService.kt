@@ -50,13 +50,15 @@ class UplinkService : Service() {
         val channelName = "Uplink service status"
 
         val nm = (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-        nm.createNotificationChannel(
-            NotificationChannel(
-                NOTIFICATION_CHANNEL_ID,
-                channelName,
-                NotificationManager.IMPORTANCE_DEFAULT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    channelName,
+                    NotificationManager.IMPORTANCE_DEFAULT
+                )
             )
-        )
+        }
 
         val startAppIntent = PendingIntent.getActivity(
             this,
