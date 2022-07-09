@@ -120,9 +120,9 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
     }
 
     private fun log(line: String) {
-        Log.e(TAG, line)
-        logs.add(0, line)
+        Log.d(TAG, line)
         runOnUiThread {
+            logs.add(0, line)
             logView.text = logs.joinToString("\n")
         }
     }
