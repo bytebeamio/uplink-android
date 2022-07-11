@@ -61,27 +61,16 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                 val service = getSystemService(BATTERY_SERVICE) as BatteryManager
                 uplink?.sendData(
                     UplinkPayload(
-                        "battery_stream",
+                        "test",
                         idx++,
                         System.currentTimeMillis(),
                         JSONObject().apply {
-                            put("package", applicationContext.packageName)
-                            put("level", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
-                            put("status", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS).let {
-                                when (it) {
-                                    BatteryManager.BATTERY_STATUS_CHARGING -> "charging"
-                                    BatteryManager.BATTERY_STATUS_DISCHARGING -> "discharging"
-                                    BatteryManager.BATTERY_STATUS_FULL -> "full"
-                                    BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "not charging"
-                                    BatteryManager.BATTERY_STATUS_UNKNOWN -> "unknown"
-                                    else -> "unknown"
-                                }
-                            })
+                            put("add", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
                             log("Sending battery data: $this")
                         }
                     )
                 )
-                Thread.sleep(15000)
+                Thread.sleep(100)
             }
 
             log("uplink client disconnected")

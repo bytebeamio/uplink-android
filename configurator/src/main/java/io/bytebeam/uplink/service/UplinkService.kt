@@ -30,12 +30,7 @@ class UplinkService : Service() {
                 """
                     [persistence]
                     path = "%s/uplink"
-                    
-                    [streams.battery_stream]
-                    topic = "/tenants/{tenant_id}/devices/{device_id}/events/battery_level"
-                    buf_size = 1
-                    
-                    """.trimIndent(),
+                """.trimIndent(),
                 applicationContext.filesDir.absolutePath
             ),
             true
