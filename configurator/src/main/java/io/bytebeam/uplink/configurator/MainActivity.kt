@@ -7,7 +7,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.util.Log
@@ -23,15 +25,14 @@ const val TAG = "MainActivity"
 const val PREFS_SERVICE_RUNNING_KEY = "serviceState"
 
 enum class ServiceState {
-    STOPPING,
     STOPPED,
-    STARTING,
     STARTED,
 }
 
-class MainActivity : AppCompatActivity(), ServiceConnection {
+class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
     lateinit var statusView: TextView
     lateinit var selectBtn: Button
+    lateinit var handler: Handler
 
     private lateinit var _serviceState: ServiceState
     var serviceState: ServiceState
@@ -52,12 +53,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)
 
-        serviceState = if (serviceRunning()) {
-            ServiceState.STARTED
-        } else {
-            ServiceState.STOPPED
-        }
-
         applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).let {
             if (!it.contains(PREFS_SERVICE_SUDO_PASS_KEY)) {
                 it.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply()
@@ -66,10 +61,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         selectBtn.setOnClickListener {
             if (serviceRunning()) {
-                serviceState = ServiceState.STOPPING
                 AlertDialog.Builder(this)
-                    .setTitle("Remove device config")
-                    .setMessage("This operation will restart the uplink service, the connected clients will have to reconnect")
+                    .setTitle("Stop Service")
+                    .setMessage("The connected clients will have to reconnect")
                     .setPositiveButton(android.R.string.ok) { dialog, which ->
                         applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
                             it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
@@ -90,20 +84,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     .setNegativeButton(android.R.string.cancel) { _, _ ->
                         serviceState = ServiceState.STARTED
                     }
-                    .setOnDismissListener {
-                        when (serviceState) {
-                            ServiceState.STARTED -> {}
-                            ServiceState.STOPPED -> {}
-                            ServiceState.STOPPING -> {
-                                serviceState = ServiceState.STARTED
-                            }
-                            ServiceState.STARTING -> throw IllegalStateException()
-                        }
-                    }
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .show()
             } else {
-                serviceState = ServiceState.STARTING
                 startActivityForResult(
                     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
@@ -113,6 +96,9 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 )
             }
         }
+
+        handler = Handler(Looper.myLooper()!!)
+        this.run()
     }
 
     private fun updateUI() {
@@ -120,19 +106,11 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         val configName = prefs.getString(PREFS_AUTH_CONFIG_NAME_KEY, null)
         runOnUiThread {
             when (serviceState) {
-                ServiceState.STOPPING -> {
-                    statusView.text = "Stopping service"
-                    selectBtn.isEnabled = false
-                }
                 ServiceState.STOPPED -> {
                     statusView.text = "Service stopped"
                     selectBtn.text = "Select device config"
                     selectBtn.isEnabled = true
                     selectBtn.setBackgroundColor(0xFF0022CC.toInt())
-                }
-                ServiceState.STARTING -> {
-                    statusView.text = "Starting service"
-                    selectBtn.isEnabled = false
                 }
                 ServiceState.STARTED -> {
                     statusView.text = "Service running for $configName"
@@ -176,8 +154,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                         })
                         serviceState = ServiceState.STARTED
                     }
-                } else {
-                    serviceState = ServiceState.STOPPED
                 }
             }
         }
@@ -221,5 +197,19 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onNullBinding(name: ComponentName?) {
         unbindService(this)
+    }
+
+    /**
+     * update ui
+     */
+    override fun run() {
+        serviceState = if (serviceRunning()) {
+            ServiceState.STARTED
+        } else {
+            ServiceState.STOPPED
+        }
+
+        updateUI()
+        handler.postDelayed(this, 3000)
     }
 }
