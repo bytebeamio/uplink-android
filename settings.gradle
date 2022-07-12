@@ -6,7 +6,7 @@ dependencyResolutionManagement {
         jcenter() // Warning: this repository is going to shut down soon
     }
 }
-rootProject.name = "uplink"
+rootProject.name = "uplink_android"
 include ':lib'
-include ':app'
+include ':example'
 include ':configurator'
