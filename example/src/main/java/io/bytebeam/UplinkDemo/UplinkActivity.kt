@@ -19,7 +19,7 @@ import org.json.JSONObject
 import java.util.concurrent.Executors
 
 class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscriber {
-    val logs = mutableListOf<String>()
+    val logs = ArrayDeque<String>()
     lateinit var logView: TextView
 
     var uplink: Uplink? = null;
@@ -111,8 +111,11 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
     private fun log(line: String) {
         Log.d(TAG, line)
         runOnUiThread {
-            logs.add(0, line)
-            logView.text = logs.joinToString("\n")
+            logs.addFirst(line)
+            if (logs.size > 250) {
+                logs.removeLast()
+            }
+            logView.text = logs.reversed().joinToString("\n")
         }
     }
 }
