@@ -14,6 +14,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        findViewById<TextView>(R.id.versionView).text = BuildConfig.VERSION_NAME
         findViewById<Button>(R.id.start_btn).setOnClickListener {
             Intent(this, UplinkActivity::class.java).also {
                 startActivity(it)

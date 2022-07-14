@@ -75,7 +75,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
 
             log("uplink client disconnected")
             // If the service goes down (configuration change), wait for a while and try to reconnect
-            Thread.sleep(15000)
+            Thread.sleep(5000)
             initUplink()
         }
     }
@@ -115,7 +115,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
             if (logs.size > 250) {
                 logs.removeLast()
             }
-            logView.text = logs.reversed().joinToString("\n")
+            logView.text = logs.joinToString("\n")
         }
     }
 }

@@ -7,11 +7,13 @@
               android:orientation="vertical"
               tools:context=".MainActivity">
 
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/versionView" />
+
     <Button
             android:id="@+id/start_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Start service"
+            android:text="Connect"
     />
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/statusView" />

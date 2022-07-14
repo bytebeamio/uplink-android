@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)
 

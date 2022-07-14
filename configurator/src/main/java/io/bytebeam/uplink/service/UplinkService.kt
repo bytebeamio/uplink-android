@@ -67,7 +67,7 @@ class UplinkService : Service() {
             .setOngoing(true)
             .setChannelId(NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Uplink service")
-            .setContentText("Service is running and ready to be used")
+            .setContentText("Service is running and ready to accept connections")
             .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(startAppIntent)
