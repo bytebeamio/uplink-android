@@ -215,7 +215,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
             ServiceState.STOPPED
         }
 
-        updateUI()
-        handler.postDelayed(this, 3000)
+        handler.postDelayed(this, 5000)
     }
 }

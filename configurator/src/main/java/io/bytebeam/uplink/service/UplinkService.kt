@@ -1,6 +1,7 @@
 package io.bytebeam.uplink.service
 
 import android.app.*
+import android.app.Notification.FOREGROUND_SERVICE_IMMEDIATE
 import android.content.Context
 import android.content.Intent
 import android.os.*
@@ -71,6 +72,7 @@ class UplinkService : Service() {
             .setPriority(NotificationManager.IMPORTANCE_DEFAULT)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(startAppIntent)
+            .setForegroundServiceBehavior(FOREGROUND_SERVICE_IMMEDIATE)
             .build()
 
         startForeground(1, notification)
