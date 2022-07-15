@@ -98,8 +98,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
             }
         }
 
-        handler = Handler(Looper.myLooper()!!)
+        handler = Handler(Looper.getMainLooper())
         this.run()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacks(this)
     }
 
     private fun updateUI() {

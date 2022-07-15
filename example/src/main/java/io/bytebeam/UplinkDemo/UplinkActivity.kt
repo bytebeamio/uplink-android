@@ -3,6 +3,8 @@ package io.bytebeam.UplinkDemo
 import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
@@ -40,10 +42,9 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
             uplink = Uplink(this, this)
         } catch (e: ConfiguratorNotInstalledException) {
             Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_LONG).show()
-            finish()
         } catch (e: UplinkServiceNotRunningException) {
-            Toast.makeText(this, "You need to start the uplink service using the configurator app", Toast.LENGTH_LONG).show()
-            finish()
+            log("service not running")
+            Handler(Looper.getMainLooper()).postDelayed(this::initUplink, 1000)
         }
     }
 
