@@ -556,7 +556,7 @@ dependencies = [
  "futures-sink",
  "nanorand",
  "pin-project 1.0.11",
- "spin 0.9.3",
+ "spin 0.9.4",
 ]
 
 [[package]]
@@ -791,7 +791,7 @@ dependencies = [
  "http",
  "indexmap",
  "slab",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-util 0.7.3",
  "tracing",
 ]
@@ -881,7 +881,7 @@ dependencies = [
  "itoa",
  "pin-project-lite 0.2.9",
  "socket2",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tower-service",
  "tracing",
  "want",
@@ -896,7 +896,7 @@ dependencies = [
  "http",
  "hyper",
  "rustls 0.20.6",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-rustls 0.23.4",
 ]
 
@@ -1742,7 +1742,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-rustls 0.23.4",
  "tokio-util 0.7.3",
  "tower-service",
@@ -1782,7 +1782,7 @@ dependencies = [
  "pollster",
  "rustls-pemfile 0.3.0",
  "thiserror",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-rustls 0.23.4",
  "webpki 0.22.0",
 ]
@@ -2130,9 +2130,9 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spin"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c530c2b0d0bf8b69304b39fe2001993e267461948b890cd037d8ad4293fa1a0d"
+checksum = "7f6002a767bff9e83f8eeecf883ecb8011875a21ae8da43bffb817a57e78cc09"
 dependencies = [
  "lock_api",
 ]
@@ -2332,10 +2332,11 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.19.2"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51a52ed6686dd62c320f9b89299e9dfb46f730c7a48e635c19f21d116cb1439"
+checksum = "57aec3cfa4c296db7255446efb4928a6be304b431a806216105542a67b6ca82e"
 dependencies = [
+ "autocfg",
  "bytes 1.1.0",
  "libc",
  "memchr",
@@ -2360,7 +2361,7 @@ dependencies = [
  "once_cell",
  "pin-project-lite 0.2.9",
  "tokio 0.2.25",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-stream",
 ]
 
@@ -2415,7 +2416,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
 dependencies = [
  "rustls 0.20.6",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "webpki 0.22.0",
 ]
 
@@ -2427,7 +2428,7 @@ checksum = "df54d54117d6fdc4e4fea40fe1e4e566b3505700e148a6827e59b34b0d2600d9"
 dependencies = [
  "futures-core",
  "pin-project-lite 0.2.9",
- "tokio 1.19.2",
+ "tokio 1.20.0",
 ]
 
 [[package]]
@@ -2456,7 +2457,7 @@ dependencies = [
  "futures-sink",
  "pin-project-lite 0.2.9",
  "slab",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tracing",
 ]
 
@@ -2673,7 +2674,7 @@ dependencies = [
  "structopt",
  "sysinfo",
  "thiserror",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "tokio-compat-02",
  "tokio-stream",
  "tokio-util 0.7.3",
@@ -2695,7 +2696,7 @@ dependencies = [
  "log-panics",
  "serde",
  "serde_json",
- "tokio 1.19.2",
+ "tokio 1.20.0",
  "uplink",
 ]
 
