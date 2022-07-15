@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
-use log::{debug, error, info, Level};
+use log::{debug, error, Level};
 use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initialize;
 use crate::bridge::AndroidBridge;
@@ -47,6 +47,7 @@ lazy_static::lazy_static! {
         tokio::runtime::Runtime::new().expect("Can't start Tokio runtime");
 }
 
+#[allow(unused_macros)]
 macro_rules! strace {
     ($expr:expr) => ({
         let result = $expr;

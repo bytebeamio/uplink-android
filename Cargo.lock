@@ -421,7 +421,7 @@ dependencies = [
 [[package]]
 name = "disk"
 version = "0.1.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_pty#04b2b3bc4e1a5c1faf416a6150a020f43cb26aa7"
+source = "git+https://github.com/bytebeamio/uplink?branch=android_pty#e1715003f8c761a301a7830e0bec0982e20e1c78"
 dependencies = [
  "bytes 1.1.0",
  "log",
@@ -1995,7 +1995,7 @@ dependencies = [
 [[package]]
 name = "serial"
 version = "0.4.1"
-source = "git+https://github.com/bmcpt/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
+source = "git+https://github.com/bytebeamio/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
 dependencies = [
  "serial-core",
  "serial-unix",
@@ -2005,7 +2005,7 @@ dependencies = [
 [[package]]
 name = "serial-core"
 version = "0.4.0"
-source = "git+https://github.com/bmcpt/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
+source = "git+https://github.com/bytebeamio/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
 dependencies = [
  "libc",
 ]
@@ -2013,7 +2013,7 @@ dependencies = [
 [[package]]
 name = "serial-unix"
 version = "0.4.0"
-source = "git+https://github.com/bmcpt/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
+source = "git+https://github.com/bytebeamio/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
 dependencies = [
  "ioctl-rs",
  "libc",
@@ -2024,7 +2024,7 @@ dependencies = [
 [[package]]
 name = "serial-windows"
 version = "0.4.0"
-source = "git+https://github.com/bmcpt/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
+source = "git+https://github.com/bytebeamio/serial-rs?branch=android_fix#bcf927a1219baa2ad79a82df79d4a6f0bf73d435"
 dependencies = [
  "libc",
  "serial-core",
@@ -2523,7 +2523,7 @@ dependencies = [
 [[package]]
 name = "tunshell-client"
 version = "0.1.0"
-source = "git+https://github.com/bmcpt/tunshell.git?branch=android_patch#a05b990230eeedcf47e68980f6ab9266977ba248"
+source = "git+https://github.com/bytebeamio/tunshell.git?branch=android_patch#a05b990230eeedcf47e68980f6ab9266977ba248"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2566,7 +2566,7 @@ dependencies = [
 [[package]]
 name = "tunshell-shared"
 version = "0.1.0"
-source = "git+https://github.com/bmcpt/tunshell.git?branch=android_patch#a05b990230eeedcf47e68980f6ab9266977ba248"
+source = "git+https://github.com/bytebeamio/tunshell.git?branch=android_patch#a05b990230eeedcf47e68980f6ab9266977ba248"
 dependencies = [
  "afl",
  "anyhow",
@@ -2655,7 +2655,7 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 [[package]]
 name = "uplink"
 version = "1.2.0"
-source = "git+https://github.com/bmcpt/uplink?branch=android_pty#04b2b3bc4e1a5c1faf416a6150a020f43cb26aa7"
+source = "git+https://github.com/bytebeamio/uplink?branch=android_pty#e1715003f8c761a301a7830e0bec0982e20e1c78"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",

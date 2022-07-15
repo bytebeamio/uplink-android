@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [patch.crates-io]
-serial = { git = "https://github.com/bmcpt/serial-rs", branch = "android_fix" }
+serial = { git = "https://github.com/bytebeamio/serial-rs", branch = "android_fix" }
 
 [dependencies]
 flume = "0.10.9"
@@ -18,8 +18,7 @@ android_logger = "0.11.0"
 log-panics = "2.0"
 lazy_static = "1.4.0"
 tokio = { version = "1", features = ["full"] }
-#uplink = { git = "https://github.com/bytebeamio/uplink", rev = "cd78a430ffd430114f6f69bacb8963f087f2316e" }
-uplink = { git = "https://github.com/bmcpt/uplink", branch = "android_pty" }
+uplink = { git = "https://github.com/bytebeamio/uplink", branch = "android_pty" }
 
 [lib]
 name = "uplink_android"
