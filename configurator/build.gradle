@@ -1,10 +1,12 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'org.mozilla.rust-android-gradle.rust-android'
 }
 
 android {
     compileSdk 32
+    ndkVersion "25.0.8775105"
 
     defaultConfig {
         applicationId "io.bytebeam.uplink.configurator"
@@ -56,54 +58,14 @@ dependencies {
     implementation project(path: ':lib')
 }
 
-def rustBasePath = project.rootProject.rootDir.path
-def archTriplets = [
-//        'armeabi-v7a': 'armv7-linux-androideabi',
-//        'arm64-v8a'  : 'aarch64-linux-android',
-        'x86'        : 'i686-linux-android',
-//        'x86_64'     : 'x86_64-linux-android',
-]
+cargo {
+    module = "../"
+    libname = "uplink_android"
+    targets = ["x86", "x86_64", "arm", "arm64"]
+}
 
-System.out.println(rustBasePath)
-
-// TODO: only pass --release if buildType is release
-archTriplets.each { arch, target ->
-    // Build with cargo
-    tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}") {
-        inputs.files "${rustBasePath}/Cargo.toml", "${rustBasePath}/Cargo.lock", "${rustBasePath}/src"
-        outputs.files "${rustBasePath}/target/${target}/debug/libuplink_android.so"
-
-        workingDir rustBasePath
-        environment ANDROID_NDK_HOME: System.getenv('HOME') + '/Android/Sdk/ndk/22.1.7171670'
-        commandLine 'cargo', 'ndk', "--target=${target}", 'build'
+tasks.whenTaskAdded { task ->
+    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
+        task.dependsOn 'cargoBuild'
     }
-
-    // Sync shared native dependencies
-    tasks.create(name: "sync-rust-deps-${arch}", type: Sync, dependsOn: "cargo-build-${arch}") {
-        from "${rustBasePath}/src/libs/${arch}"
-        include "*.so"
-        into "src/main/jniLibs/${arch}"
-    }
-
-    // Copy build libs into this module's libs directory
-    tasks.create(name: "rust-deploy-${arch}", type: Copy, dependsOn: "sync-rust-deps-${arch}", description: "Copy rust libs for (${arch}) to jniLibs") {
-        from "${rustBasePath}/target/${target}/debug"
-        include "*.so"
-        into "src/main/jniLibs/${arch}"
-    }
-
-    // Hook up tasks to execute before building java
-    tasks.withType(JavaCompile) {
-        compileTask -> compileTask.dependsOn "rust-deploy-${arch}"
-    }
-    preBuild.dependsOn "rust-deploy-${arch}"
-
-    // Hook up clean tasks
-    tasks.create(name: "clean-${arch}", type: Delete, description: "Deleting built libs for ${arch}") {
-        delete fileTree("src/main/jniLibs/${arch}") {
-            include '*.so'
-        }
-    }
-
-    clean.dependsOn "clean-${arch}"
 }
