@@ -1,13 +1,13 @@
 package io.bytebeam.uplink.service
 
 import android.app.*
-import android.app.Notification.FOREGROUND_SERVICE_IMMEDIATE
 import android.content.Context
 import android.content.Intent
 import android.os.*
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import io.bytebeam.uplink.common.Constants
 import io.bytebeam.uplink.common.UplinkAction
 import io.bytebeam.uplink.common.UplinkPayload
