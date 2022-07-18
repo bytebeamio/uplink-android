@@ -22,8 +22,21 @@ buildscript {
     }
 }
 
+task cargoClean(type: Delete) {
+    delete rootProject.rootDir.path + '/target'
+}
+
 task clean(type: Delete) {
+    dependsOn cargoClean
     delete rootProject.buildDir
+    subprojects.each {
+        it.afterEvaluate {
+            def cleanTask = it.tasks.findByName('clean')
+            if (cleanTask) {
+                dependsOn(cleanTask)
+            }
+        }
+    }
 }
 
 task buildArtifacts {
