@@ -41,7 +41,7 @@ class UplinkService : Service() {
         ) { uplinkAction: UplinkAction -> uplinkSubscription(uplinkAction) }
         Log.d(TAG, "uplink native context initialized")
         makeForeground()
-        return START_REDELIVER_INTENT
+        return START_NOT_STICKY
     }
 
     private fun makeForeground() {
