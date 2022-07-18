@@ -204,14 +204,17 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             while (serviceRunning()) {
                 Thread.sleep(1000)
             }
-            applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
-                it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
-                it.remove(PREFS_AUTH_CONFIG_KEY)
-                it.commit()
-            }
 
-            serviceState = ServiceState.STOPPED
-            messenger = null
+            runOnUiThread {
+                applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
+                    it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
+                    it.remove(PREFS_AUTH_CONFIG_KEY)
+                    it.commit()
+                }
+
+                serviceState = ServiceState.STOPPED
+                messenger = null
+            }
         }
     }
 
