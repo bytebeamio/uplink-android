@@ -9,8 +9,11 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
 import io.bytebeam.uplink.common.Constants
+import io.bytebeam.uplink.common.Constants.DATA_KEY
+import io.bytebeam.uplink.common.Constants.PREFS_SERVICE_SUDO_PASS_KEY
 import io.bytebeam.uplink.common.UplinkAction
 import io.bytebeam.uplink.common.UplinkPayload
+import io.bytebeam.uplink.configurator.BuildConfig
 import io.bytebeam.uplink.configurator.MainActivity
 import io.bytebeam.uplink.configurator.R
 
@@ -18,8 +21,7 @@ class UplinkService : Service() {
     var subscribers: MutableList<Messenger> = ArrayList()
     var uplink: Long = 0
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val prefs = applicationContext.getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE)
-        val authConfig = prefs.getString(Constants.PREFS_AUTH_CONFIG_KEY, null)
+        val authConfig = intent.getStringExtra(DATA_KEY)
         if (authConfig == null) {
             Log.d(TAG, "device config not found")
             Toast.makeText(this, "device config not found", Toast.LENGTH_LONG).show()
@@ -27,7 +29,8 @@ class UplinkService : Service() {
             return START_NOT_STICKY
         }
         uplink = NativeApi.createUplink(
-            authConfig, String.format(
+            authConfig,
+            String.format(
                 """
                     [persistence]
                     path = "%s/uplink"
@@ -123,15 +126,16 @@ class UplinkService : Service() {
                 subscribers.add(message.replyTo)
             }
             Constants.STOP_SERVICE -> {
-                val sudoPass = applicationContext.getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE).getString(
-                    Constants.PREFS_SERVICE_SUDO_PASS_KEY, null
-                )
-                val pass = message.data.getString(Constants.DATA_KEY, null)
+                val sudoPass = applicationContext.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                    .getString(PREFS_SERVICE_SUDO_PASS_KEY, "pass not found service")
+                val pass = message.data.getString(DATA_KEY, null)
                 if (pass != null && pass == sudoPass) {
                     Log.d(TAG, "stopping service")
                     end()
                 } else {
-                    Log.e(TAG, String.format("privileged operation key mismatch: %s is not valid", pass))
+                    if (BuildConfig.DEBUG) {
+                        Log.e(TAG, String.format("privileged operation key mismatch: %s != %s", pass, sudoPass))
+                    }
                 }
             }
             else -> throw IllegalArgumentException()

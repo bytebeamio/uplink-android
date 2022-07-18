@@ -19,6 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
+import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
 const val TAG = "MainActivity"
@@ -26,13 +27,15 @@ const val PREFS_SERVICE_RUNNING_KEY = "serviceState"
 
 enum class ServiceState {
     STOPPED,
-    STARTED,
+    RUNNING,
+    WORKING,
 }
 
-class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
+class MainActivity : AppCompatActivity(), ServiceConnection {
     lateinit var statusView: TextView
     lateinit var selectBtn: Button
     lateinit var handler: Handler
+    var messenger: Messenger? = null
 
     private lateinit var _serviceState: ServiceState
     var serviceState: ServiceState
@@ -40,8 +43,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
         set(newState) {
             _serviceState = newState
             getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
-                it.putBoolean(PREFS_SERVICE_RUNNING_KEY, _serviceState == ServiceState.STARTED)
-                it.apply()
+                it.putBoolean(PREFS_SERVICE_RUNNING_KEY, _serviceState == ServiceState.RUNNING)
+                it.commit()
             }
             updateUI()
         }
@@ -56,55 +59,54 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
 
         applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).let {
             if (!it.contains(PREFS_SERVICE_SUDO_PASS_KEY)) {
-                it.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).apply()
+                it.edit().putString(PREFS_SERVICE_SUDO_PASS_KEY, genPassKey()).commit()
             }
         }
 
-        selectBtn.setOnClickListener {
-            if (serviceRunning()) {
-                AlertDialog.Builder(this)
-                    .setTitle("Stop Service")
-                    .setMessage("The connected clients will have to reconnect")
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
-                            it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
-                            it.remove(PREFS_AUTH_CONFIG_KEY)
-                            it.apply()
-                        }
+        if (serviceRunning()) {
+            serviceState = ServiceState.WORKING
+            connectToService()
+        } else {
+            serviceState = ServiceState.STOPPED
+        }
 
-                        Log.d(TAG, "stopping service")
-                        Intent().also {
-                            it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
-                            bindService(
-                                it,
-                                this,
-                                Context.BIND_NOT_FOREGROUND
-                            )
+        selectBtn.setOnClickListener {
+            when (serviceState) {
+                ServiceState.RUNNING -> {
+                    serviceState = ServiceState.WORKING
+                    AlertDialog.Builder(this)
+                        .setTitle("Stop Service")
+                        .setMessage("The connected clients will have to reconnect")
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            Log.d(TAG, "stopping service")
+                            sendStopCommand()
                         }
-                    }
-                    .setNegativeButton(android.R.string.cancel) { _, _ ->
-                        serviceState = ServiceState.STARTED
-                    }
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .show()
-            } else {
-                startActivityForResult(
-                    Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = "application/json"
-                    },
-                    PICK_AUTH_CONFIG
-                )
+                        .setNegativeButton(android.R.string.cancel) { _, _ ->
+                            serviceState = ServiceState.RUNNING
+                        }
+                        .setOnCancelListener {
+                            serviceState = ServiceState.RUNNING
+                        }
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show()
+                }
+                ServiceState.STOPPED -> {
+                    serviceState = ServiceState.WORKING
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(
+                        Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "application/json"
+                        },
+                        PICK_AUTH_CONFIG
+                    )
+
+                }
+                ServiceState.WORKING -> {}
             }
         }
 
         handler = Handler(Looper.getMainLooper())
-        this.run()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacks(this)
     }
 
     private fun updateUI() {
@@ -118,12 +120,17 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
                     selectBtn.isEnabled = true
                     selectBtn.setBackgroundColor(0xFF0022CC.toInt())
                 }
-                ServiceState.STARTED -> {
+                ServiceState.RUNNING -> {
                     statusView.text = "Service running for $configName"
                     selectBtn.text = "Stop service"
                     selectBtn.isEnabled = true
                     selectBtn.setBackgroundColor(0xFFFF3300.toInt())
-
+                }
+                ServiceState.WORKING -> {
+                    statusView.text = ""
+                    selectBtn.text = "Working"
+                    selectBtn.isEnabled = false
+                    selectBtn.setBackgroundColor(0xFF332255.toInt())
                 }
             }
         }
@@ -139,28 +146,31 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
                     if (uri != null) {
                         val inputStream = contentResolver.openInputStream(uri)
                         val jsonString = inputStream?.bufferedReader()?.use { it.readText() }
-                        val configName = uri.lastPathSegment ?: "device.json"
+                        val configName = uri.lastPathSegment ?: uri.path ?: uri.toString()
                         if (jsonString == null) {
-                            Toast.makeText(this, "Could not read file", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Could not read file", Toast.LENGTH_LONG).show()
                             return
                         }
                         try {
                             JSONObject(jsonString)
                             // TODO: verify properties
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Invalid JSON", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this, "Invalid JSON", Toast.LENGTH_LONG).show()
                             return
                         }
                         applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
                             it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
                             it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
-                            it.apply()
+                            it.commit()
                         }
                         startService(Intent().also {
                             it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                            it.putExtra(DATA_KEY, jsonString)
                         })
-                        serviceState = ServiceState.STARTED
+                        connectToService()
                     }
+                } else {
+                    serviceState = ServiceState.STOPPED
                 }
             }
         }
@@ -179,11 +189,10 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
         return false
     }
 
-    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+    private fun sendStopCommand() {
         val sudoPass = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(PREFS_SERVICE_SUDO_PASS_KEY, "")
-        val messenger = Messenger(service)
-        messenger.send(
+            .getString(PREFS_SERVICE_SUDO_PASS_KEY, "pass not found app")
+        messenger!!.send(
             Message().also {
                 it.what = STOP_SERVICE
                 it.data = Bundle().also {
@@ -191,8 +200,40 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
                 }
             }
         )
-        serviceState = ServiceState.STOPPED
-        unbindService(this)
+        Executors.newSingleThreadExecutor().execute {
+            while (serviceRunning()) {
+                Thread.sleep(1000)
+            }
+            applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
+                it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
+                it.remove(PREFS_AUTH_CONFIG_KEY)
+                it.commit()
+            }
+
+            serviceState = ServiceState.STOPPED
+            messenger = null
+        }
+    }
+
+    private fun connectToService() {
+        Executors.newSingleThreadExecutor().execute {
+            while (!serviceRunning()) {
+                Thread.sleep(1000)
+            }
+            Intent().also {
+                it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                bindService(
+                    it,
+                    this,
+                    Context.BIND_NOT_FOREGROUND
+                )
+            }
+        }
+    }
+
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        messenger = Messenger(service)
+        serviceState = ServiceState.RUNNING
     }
 
     override fun onServiceDisconnected(name: ComponentName?) {
@@ -207,18 +248,5 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
 
     override fun onNullBinding(name: ComponentName?) {
         unbindService(this)
-    }
-
-    /**
-     * update ui
-     */
-    override fun run() {
-        serviceState = if (serviceRunning()) {
-            ServiceState.STARTED
-        } else {
-            ServiceState.STOPPED
-        }
-
-        handler.postDelayed(this, 5000)
     }
 }
