@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
                 AlertDialog.Builder(this)
                     .setTitle("Stop Service")
                     .setMessage("The connected clients will have to reconnect")
-                    .setPositiveButton(android.R.string.ok) { dialog, which ->
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
                         applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().also {
                             it.remove(PREFS_AUTH_CONFIG_NAME_KEY)
                             it.remove(PREFS_AUTH_CONFIG_KEY)
@@ -130,6 +130,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             PICK_AUTH_CONFIG -> {
@@ -144,7 +145,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
                             return
                         }
                         try {
-                            val json = JSONObject(jsonString)
+                            JSONObject(jsonString)
                             // TODO: verify properties
                         } catch (e: Exception) {
                             Toast.makeText(this, "Invalid JSON", Toast.LENGTH_SHORT).show()
@@ -165,8 +166,11 @@ class MainActivity : AppCompatActivity(), ServiceConnection, Runnable {
         }
     }
 
-    fun serviceRunning(): Boolean {
+    private fun serviceRunning(): Boolean {
         val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        // On recent androids, ActivityManager.getRunningServices returns the list of running services that
+        // belong to the current app, which is enough for this use case.
+        @Suppress("DEPRECATION")
         for (info in am.getRunningServices(Int.MAX_VALUE)) {
             if (info.service.equals(ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID))) {
                 return true
