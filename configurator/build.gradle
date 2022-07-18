@@ -4,6 +4,9 @@ plugins {
     id 'org.mozilla.rust-android-gradle.rust-android'
 }
 
+Properties localProps = new Properties()
+localProps.load(project.rootProject.file('local.properties').newDataInputStream())
+
 android {
     compileSdk 32
     ndkVersion "25.0.8775105"
@@ -20,9 +23,6 @@ android {
 
     signingConfigs {
         release {
-            Properties localProps = new Properties()
-            localProps.load(project.rootProject.file('local.properties').newDataInputStream())
-
             if (localProps.getProperty("RELEASE_STORE_FILE") != null) {
                 storeFile file("../" + localProps.getProperty("RELEASE_STORE_FILE"))
                 storePassword localProps.getProperty("RELEASE_STORE_PASSWORD")
@@ -35,7 +35,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+
+            if (localProps.getProperty("RELEASE_STORE_FILE") != null) {
+                signingConfig signingConfigs.release
+            }
+
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
