@@ -57,6 +57,6 @@ task buildArtifacts {
         String lib = project.rootProject.rootDir.path + "/lib/build/outputs/aar/uplink-release.aar"
         Files.copy(Paths.get(configurator), Paths.get(stage.path, "configurator_${sdk_version}.apk"))
         Files.copy(Paths.get(example), Paths.get(stage.path, "example_${sdk_version}.apk"))
-        Files.copy(Paths.get(lib), Paths.get(stage.path, "lib_${sdk_version}.aar"))
+        Files.copy(Paths.get(lib), Paths.get(stage.path, "uplink_${sdk_version}.aar"))
     }
 }
