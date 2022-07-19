@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
-use log::{debug, error, Level};
+use log::{debug, error, info, Level};
 use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initialize;
 use crate::bridge::AndroidBridge;
@@ -137,7 +137,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     }
 
     if enable_logging != 0 {
-        error!("Logging enabled");
+        info!("Logging enabled");
         let log_stream = Stream::dynamic(
             "logs",
             &config.project_id,
@@ -146,12 +146,17 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
         );
 
         std::thread::spawn(move || {
-            if let Err(e) = logcat::relay_logs(log_stream) {
-                error!("Error while relaying logs: {}", e);
+            match logcat::relay_logs(log_stream) {
+                Err(e) => error!("Error while relaying logs: {}", e),
+                Ok(status) => {
+                    if !status.success() {
+                        error!("logcat exited with status: {}", status);
+                    }
+                }
             }
         });
     } else {
-        error!("{}", enable_logging);
+        info!("logging disabled");
     }
 
     Box::into_raw(Box::new(UplinkAndroidContext {

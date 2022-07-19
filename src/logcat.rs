@@ -1,6 +1,8 @@
 use std::io::{BufRead, BufReader};
 use std::process::{Command, ExitStatus};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use anyhow::Context;
+use log::error;
 
 use uplink::{Payload, Stream};
 
@@ -55,22 +57,25 @@ impl Log {
     }
 }
 
-pub fn relay_logs(mut log_stream: Stream<Payload>) -> Result<ExitStatus, String> {
+pub fn relay_logs(mut log_stream: Stream<Payload>) -> anyhow::Result<ExitStatus> {
     let mut logcat = Command::new("logcat")
         .args(["-v", "threadtime"])
         .stdout(std::process::Stdio::piped())
         .spawn()
-        .map_err(|e| e.to_string())?;
-    let stdout = logcat.stdout.as_mut().ok_or("stdout missing".to_string())?;
+        .context("Failed to start logcat")?;
+    let stdout = logcat.stdout.as_mut().context("stdout missing")?;
     let stdout_reader = BufReader::new(stdout);
 
     for (sequence, line) in stdout_reader.lines().enumerate() {
-        let log = line.map_err(|e| e.to_string())?;
-        if let Some(data) = Log::from_string(log)
-            .and_then(|log| log.to_payload(sequence as u32)) {
-            log_stream.push(data);
+        if let Ok(log) = line {
+            if let Some(data) = Log::from_string(log)
+                .and_then(|log| log.to_payload(sequence as u32)) {
+                log_stream.push(data)
+                    .map_err(|e| anyhow::Error::msg(e.to_string()))
+                    .context("Failed to push log to stream")?;
+            }
         }
     }
 
-    logcat.wait().map_err(|e| e.to_string())
+    logcat.wait().with_context(|| "logcat failed")
 }
