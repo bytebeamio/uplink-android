@@ -11,6 +11,7 @@ use crate::jni_helpers::{FromJava};
 
 mod bridge;
 mod jni_helpers;
+mod logcat;
 
 pub struct UplinkAndroidContext {
     config: Arc<Config>,
@@ -62,7 +63,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     _: JClass,
     auth_config: JString,
     uplink_config: JString,
-    _enable_logging: jboolean,
+    enable_logging: jboolean,
     action_callback: JObject,
 ) -> jlong {
     android_logger::init_once(
@@ -133,6 +134,24 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
             stream.clone(),
             Stream::new(stream, config.topic, config.buf_size, uplink.bridge_data_tx()),
         );
+    }
+
+    if enable_logging != 0 {
+        error!("Logging enabled");
+        let log_stream = Stream::dynamic(
+            "logs",
+            &config.project_id,
+            &config.device_id,
+            uplink.bridge_data_tx().clone(),
+        );
+
+        std::thread::spawn(move || {
+            if let Err(e) = logcat::relay_logs(log_stream) {
+                error!("Error while relaying logs: {}", e);
+            }
+        });
+    } else {
+        error!("{}", enable_logging);
     }
 
     Box::into_raw(Box::new(UplinkAndroidContext {
