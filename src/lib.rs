@@ -63,11 +63,11 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     _: JClass,
     auth_config: JString,
     uplink_config: JString,
-    enable_logging: jboolean,
+    _enable_logging: jboolean,
     action_callback: JObject,
 ) -> jlong {
     android_logger::init_once(
-        android_logger::Config::default()
+        Config::default()
             .with_tag("NDK_MOD")
             .with_min_level(Level::Trace),
     );
@@ -134,29 +134,6 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
             stream.clone(),
             Stream::new(stream, config.topic, config.buf_size, uplink.bridge_data_tx()),
         );
-    }
-
-    if enable_logging != 0 {
-        info!("Logging enabled");
-        let log_stream = Stream::dynamic(
-            "logs",
-            &config.project_id,
-            &config.device_id,
-            uplink.bridge_data_tx().clone(),
-        );
-
-        std::thread::spawn(move || {
-            match logcat::relay_logs(log_stream) {
-                Err(e) => error!("Error while relaying logs: {}", e),
-                Ok(status) => {
-                    if !status.success() {
-                        error!("logcat exited with status: {}", status);
-                    }
-                }
-            }
-        });
-    } else {
-        info!("logging disabled");
     }
 
     Box::into_raw(Box::new(UplinkAndroidContext {
