@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni_sys::{jboolean, jlong, jobject};
-use log::{debug, error, info, Level};
+use log::{debug, error, Level};
 use uplink::{Config, Payload, Stream, Uplink};
 use uplink::config::initialize;
 use crate::bridge::AndroidBridge;
@@ -12,6 +12,8 @@ use crate::jni_helpers::{FromJava};
 mod bridge;
 mod jni_helpers;
 mod logcat;
+
+pub const LOGCAT_TAG: &str = "UPLINK_NDK_MOD";
 
 pub struct UplinkAndroidContext {
     config: Arc<Config>,
@@ -68,7 +70,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
 ) -> jlong {
     android_logger::init_once(
         android_logger::Config::default()
-            .with_tag("NDK_MOD")
+            .with_tag(LOGCAT_TAG)
             .with_min_level(Level::Trace),
     );
     log_panics::init();
@@ -98,11 +100,22 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     uplink.spawn().unwrap();
 
     let jvm = env.get_java_vm().unwrap();
-    let mut bridge = {
-        let java_api = java_api.clone();
-        AndroidBridge::new(
-            config.clone(),
-            uplink.bridge_action_rx(),
+    let mut bridge =         AndroidBridge::new(
+        {
+            let bridge_data_tx = uplink.bridge_data_tx();
+            let project_id = config.project_id.clone();
+            let device_id = config.device_id.clone();
+            Box::new(move || Stream::dynamic_with_size(
+                "logs",
+                &project_id,
+                &device_id,
+                1,
+                bridge_data_tx.clone()
+            ))
+        },
+        uplink.bridge_action_rx(),
+        {
+            let java_api = java_api.clone();
             Box::new(move |action| {
                 let env = jvm.attach_current_thread().unwrap();
                 let uplink_action = env.call_method(
@@ -122,9 +135,9 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
                     "(Lio/bytebeam/uplink/common/UplinkAction;)V",
                     &[JValue::Object(uplink_action.l().unwrap())],
                 ).unwrap();
-            }),
-        )
-    };
+            })
+        },
+    );
     RUNTIME.spawn(async move {
         bridge.start().await.unwrap();
     });
