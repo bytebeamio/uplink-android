@@ -67,7 +67,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     action_callback: JObject,
 ) -> jlong {
     android_logger::init_once(
-        Config::default()
+        android_logger::Config::default()
             .with_tag("NDK_MOD")
             .with_min_level(Level::Trace),
     );
@@ -101,6 +101,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
     let mut bridge = {
         let java_api = java_api.clone();
         AndroidBridge::new(
+            config.clone(),
             uplink.bridge_action_rx(),
             Box::new(move |action| {
                 let env = jvm.attach_current_thread().unwrap();

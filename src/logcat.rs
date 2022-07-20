@@ -1,5 +1,7 @@
 use std::io::{BufRead, BufReader};
+use std::ops::Deref;
 use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use anyhow::Context;
 
@@ -8,10 +10,8 @@ use serde::{Deserialize, Serialize};
 use uplink::{Payload, Stream};
 
 #[derive(Debug, Deserialize)]
-pub struct LogConfig {
-    pub name: String,
-    pub topic: String,
-    pub tag: String,
+pub struct LogcatConfig {
+    pub tags: Vec<String>,
     pub min_level: LogLevel,
 }
 
@@ -27,14 +27,14 @@ pub enum LogLevel {
 }
 
 #[derive(Debug, Serialize)]
-struct Log {
+struct LogEntry {
     level: LogLevel,
     tag: String,
     msg: String,
 }
 
-impl Log {
-    fn from_string(log: String, config: &LogConfig) -> Option<Self> {
+impl LogEntry {
+    fn from_string(log: &str) -> Option<Self> {
         let tokens: Vec<&str> = log.split(' ').collect();
 
         let level = match *(tokens.get(4)?) {
@@ -51,19 +51,16 @@ impl Log {
             return None;
         }
 
-        let tag = match tokens.get(5)? {
-            s if s == &config.tag => s.to_string(),
-            _ => return None,
-        };
+        let tag = tokens.get(5)?.to_string();
 
         Some(Self {
             level,
             tag,
-            msg: log,
+            msg: log.to_string(),
         })
     }
 
-    fn to_payload(&self, sequence: u32) -> Result<Payload, String> {
+    fn to_payload(&self, sequence: u32) -> anyhow::Result<Payload> {
         let payload = serde_json::to_value(self)?;
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -79,29 +76,105 @@ impl Log {
     }
 }
 
-pub fn relay_logs(
-    mut log_stream: Stream<Payload>,
-    log_config: LogConfig,
-) -> anyhow::Result<ExitStatus> {
-    let mut logcat = Command::new("logcat")
-        .args(["-v", "threadtime"])
-        .stdout(Stdio::piped())
-        .spawn()
-        .context("could not spawn logcat")?;
-    let stdout = logcat
-        .stdout
-        .as_mut()
-        .context("stdout missing")?;
-    let stdout_reader = BufReader::new(stdout);
+/// Starts a logcat instance that reports to the logs stream for a given
+/// device+project id, that logcat instance is killed when this object
+/// is dropped
+pub struct LogcatInstance {
+    kill_switch: Arc<Mutex<bool>>,
+}
 
-    debug!("Collector setup to relay logs");
+impl LogcatInstance {
+    pub fn new(uplink_config: &uplink::Config, logcat_config: &LogcatConfig) -> Self {
+        let kill_switch = Arc::new(Mutex::new(true));
 
-    for (sequence, line) in stdout_reader.lines().enumerate() {
-        if let Some(log) = Log::from_string(line?, &log_config) {
-            let data = log.to_payload(sequence as u32)?;
-            log_stream.push(data)?;
+        {
+            /// Use a separate context for logging thread
+            let kill_switch = kill_switch.clone();
+            let mut log_stream = Stream::dynamic_with_size(
+                "logs",
+                &uplink_config.project_id,
+                &uplink_config.device_id,
+                1,
+                uplink.bridge_data_tx().clone(),
+            );
+
+            std::thread::spawn(move || {
+                let mut log_index = 1;
+                match Command::new("logcat")
+                    .args(["-v", "threadtime"])
+                    .stdout(Stdio::piped())
+                    .spawn() {
+                    Ok(mut logcat) => {
+                        let stdout = logcat
+                            .stdout
+                            .take()
+                            .unwrap();
+                        let mut buf_stdout = BufReader::new(stdout);
+                        loop {
+                            if kill_switch.lock() == false {
+                                logcat.kill();
+                                break;
+                            } else {
+                                let mut next_line = String::new();
+                                match buf_stdout.read_line(&mut next_line) {
+                                    Ok(bc) => {
+                                        if bc == 0 {
+                                            break;
+                                        }
+                                        let next_line = next_line.trim();
+                                        log_stream.push(
+                                            LogEntry::from_string(next_line)
+                                                .unwrap_or(LogEntry {
+                                                    level: LogLevel::Error,
+                                                    tag: "LOGGER".to_string(),
+                                                    msg: format!("Log line in unknown format: {}", next_line),
+                                                })
+                                                .to_payload(log_index),
+                                        ).unwrap();
+                                        log_index += 1;
+                                    }
+                                    Err(e) => {
+                                        log_stream.push(
+                                            LogEntry {
+                                                level: LogLevel::Error,
+                                                tag: "LOGGER".to_string(),
+                                                msg: e.to_string(),
+                                            }.to_payload(log_index),
+                                        ).unwrap();
+                                        log_index += 1;
+                                        break;
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        log_stream.push(
+                            LogEntry {
+                                level: LogLevel::Error,
+                                tag: "LOGGER".to_string(),
+                                msg: "Failed to start logcat".to_string(),
+                            }.to_payload(log_index),
+                        ).unwrap();
+                        log_index += 1;
+                    }
+                };
+            });
+        }
+        Self {
+            kill_switch,
         }
     }
+}
 
-    logcat.wait().map_err(|e| anyhow::Error::msg("logcat failed"))
+pub fn log_to_stream(entry: LogEntry, log_index: u32) {
+    log_stream.push(
+        entry.to_payload(log_index)
+    );
+}
+
+impl Drop for LogcatInstance {
+    fn drop(&mut self) {
+        *self.kill_switch.get_mut() = false;
+    }
 }
