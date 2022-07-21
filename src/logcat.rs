@@ -5,6 +5,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use uplink::{Payload, Stream};
+use crate::LOGCAT_TAG;
 
 #[derive(Debug, Deserialize)]
 pub struct LogcatConfig {
@@ -103,13 +104,14 @@ impl LogcatInstance {
         for tag in &logcat_config.tags {
             filter_spec.push(format!("{}:{}", tag, logcat_config.min_level.to_str()));
         }
+        filter_spec.push(format!("{}:S", LOGCAT_TAG));
         {
             let kill_switch = kill_switch.clone();
 
             std::thread::spawn(move || {
                 let mut log_index = 1;
                 match Command::new("logcat")
-                    .args(["-v", "threadtime"])
+                    .args(filter_spec.iter().collect::<Vec<_>>())
                     .stdout(Stdio::piped())
                     .spawn() {
                     Ok(mut logcat) => {
