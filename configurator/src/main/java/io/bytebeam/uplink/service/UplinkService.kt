@@ -161,9 +161,11 @@ class UplinkService : Service() {
                 expiredConnections.add(sIdx)
             }
         }
-        Log.i(TAG, String.format("%d subscribers expired", expiredConnections.size))
-        for (eIdx in expiredConnections.reversed()) {
-            subscribers.removeAt(eIdx)
+        if (expiredConnections.isNotEmpty()) {
+            Log.i(TAG, String.format("%d subscribers expired", expiredConnections.size))
+            for (eIdx in expiredConnections.reversed()) {
+                subscribers.removeAt(eIdx)
+            }
         }
     }
 
