@@ -109,7 +109,7 @@ pub extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_createUplink(
                 "logs",
                 &project_id,
                 &device_id,
-                1,
+                32,
                 bridge_data_tx.clone()
             ))
         },

@@ -94,8 +94,8 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                         action.id,
                         i,
                         System.currentTimeMillis(),
-                        if (i == 10) {
-                            "Progress"
+                        if (i != 10) {
+                            "Running"
                         } else {
                             "Completed"
                         },
