@@ -54,7 +54,7 @@ impl AndroidBridge {
 
             log::info!("received action: {:?}", action);
             match action.name.as_str() {
-                "configure_logging" => {
+                "configure_logcat" => {
                     match serde_json::from_str::<LogcatConfig>(action.payload.as_str()) {
                         Ok(mut logcat_config) => {
                             logcat_config.tags = logcat_config.tags.into_iter()
