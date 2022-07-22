@@ -52,6 +52,7 @@ impl AndroidBridge {
             let action = self.actions_rx.recv_async().await?;
             self.current_action = Some(action.action_id.to_owned());
 
+            log::info!("received action: {:?}", action);
             match action.name.as_str() {
                 "configure_logging" => {
                     match serde_json::from_str::<LogcatConfig>(action.payload.as_str()) {
@@ -59,6 +60,7 @@ impl AndroidBridge {
                             logcat_config.tags = logcat_config.tags.into_iter()
                                 .filter(|tag| !tag.is_empty() && tag.as_str() != LOGCAT_TAG)
                                 .collect();
+                            log::info!("restarting logcat");
                             self.logcat = LogcatInstance::new((self.log_stream_constructor)(), &logcat_config)
                         }
                         Err(e) => {

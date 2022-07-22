@@ -58,9 +58,13 @@ struct LogEntry {
     msg: String,
 }
 
+lazy_static::lazy_static! {
+    pub static ref SPACES_RE: regex::Regex = regex::Regex::new(r"\s+").unwrap();
+}
+
 impl LogEntry {
-    fn from_string(log: &str) -> Option<Self> {
-        let tokens: Vec<&str> = log.split(' ').collect();
+    fn from_string(line: &str) -> Option<Self> {
+        let tokens: Vec<&str> = SPACES_RE.split(line).collect();
 
         let level = LogLevel::from_str(tokens.get(4)?)?;
 
@@ -69,7 +73,7 @@ impl LogEntry {
         Some(Self {
             level,
             tag,
-            msg: log.to_string(),
+            msg: line.to_string(),
         })
     }
 
@@ -100,11 +104,16 @@ impl LogcatInstance {
     pub fn new(mut log_stream: Stream<Payload>, logcat_config: &LogcatConfig) -> Self {
         let kill_switch = Arc::new(Mutex::new(true));
 
+        // silence everything
         let mut filter_spec = vec!["*:S".to_string()];
+        // enable logging for requested tags
         for tag in &logcat_config.tags {
             filter_spec.push(format!("{}:{}", tag, logcat_config.min_level.to_str()));
         }
+        // silence logs coming from native module
         filter_spec.push(format!("{}:S", LOGCAT_TAG));
+
+        log::info!("logcat filter_spec: {:?}", filter_spec);
         {
             let kill_switch = kill_switch.clone();
 

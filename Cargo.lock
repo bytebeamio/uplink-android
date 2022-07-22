@@ -2694,6 +2694,7 @@ dependencies = [
  "lazy_static",
  "log",
  "log-panics",
+ "regex",
  "serde",
  "serde_json",
  "tokio 1.20.0",
