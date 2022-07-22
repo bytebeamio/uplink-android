@@ -1,11 +1,13 @@
 package io.bytebeam.uplink.configurator
 
+import android.Manifest
 import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -17,6 +19,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -52,6 +55,8 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
 
         findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
         statusView = findViewById(R.id.status_view)
@@ -107,6 +112,20 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         }
 
         handler = Handler(Looper.getMainLooper())
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "storage permission granted")
+                } else {
+                    Log.d(TAG, "storage permission denied")
+                    Toast.makeText(this, "Storage permission required", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+        }
     }
 
     private fun updateUI() {
