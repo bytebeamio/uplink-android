@@ -149,16 +149,20 @@ class UplinkService : Service() {
             return
         }
         Log.d(TAG, String.format("Broadcasting action: %s", uplinkAction.toString()))
-        for (subscriber in subscribers) {
+        val expiredConnections = mutableListOf<Int>()
+        for (sIdx in 0 until subscribers.size) {
             val m = Message()
             val b = Bundle()
-            b.putParcelable(Constants.DATA_KEY, uplinkAction)
+            b.putParcelable(DATA_KEY, uplinkAction)
             m.data = b
             try {
-                subscriber.send(m)
+                subscribers[sIdx].send(m)
             } catch (e: RemoteException) {
-                throw RuntimeException(e)
+                expiredConnections.add(sIdx)
             }
+        }
+        for (eIdx in expiredConnections.reversed()) {
+            subscribers.removeAt(eIdx)
         }
     }
 
