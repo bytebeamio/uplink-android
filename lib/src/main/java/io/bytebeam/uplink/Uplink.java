@@ -30,7 +30,7 @@ public class Uplink implements ServiceConnection {
     }
 
     /**
-     * Spawns an instance of the uplink.
+     * Connects to the uplink service.
      *
      * @param context              Current application context
      * @param uplinkReadyCallback callback that will be invoked when the service is ready to be used
@@ -118,9 +118,7 @@ public class Uplink implements ServiceConnection {
     }
 
     /**
-     * To be called when the client is done using the service
-     * The uplink service will kill the process it was running in
-     * The instance must not be used after this method is called
+     * To be called when the client is done using the uplink service.
      */
     public void dispose() {
         state = UplinkServiceState.DISPOSED;

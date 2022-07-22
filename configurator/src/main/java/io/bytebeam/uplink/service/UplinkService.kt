@@ -118,11 +118,11 @@ class UplinkService : Service() {
                 val b = message.data
                 b.classLoader = UplinkPayload::class.java.classLoader
                 val payload = b.getParcelable<UplinkPayload>(Constants.DATA_KEY)
-                Log.d(TAG, String.format("Submitting payload: %s", payload.toString()))
+                Log.i(TAG, String.format("Submitting payload: %s", payload.toString()))
                 NativeApi.sendData(uplink, payload)
             }
             Constants.SUBSCRIBE -> {
-                Log.d(TAG, "adding a subscriber")
+                Log.i(TAG, "adding a subscriber")
                 subscribers.add(message.replyTo)
             }
             Constants.STOP_SERVICE -> {
@@ -148,7 +148,7 @@ class UplinkService : Service() {
             Log.e(TAG, "Action delivered to an unbound service, ignoring")
             return
         }
-        Log.d(TAG, String.format("Broadcasting action: %s", uplinkAction.toString()))
+        Log.i(TAG, String.format("Broadcasting action: %s", uplinkAction.toString()))
         val expiredConnections = mutableListOf<Int>()
         for (sIdx in 0 until subscribers.size) {
             val m = Message()
@@ -161,6 +161,7 @@ class UplinkService : Service() {
                 expiredConnections.add(sIdx)
             }
         }
+        Log.i(TAG, String.format("%d subscribers expired", expiredConnections.size))
         for (eIdx in expiredConnections.reversed()) {
             subscribers.removeAt(eIdx)
         }

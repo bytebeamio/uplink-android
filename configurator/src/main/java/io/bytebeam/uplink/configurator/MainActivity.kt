@@ -109,15 +109,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         handler = Handler(Looper.getMainLooper())
     }
 
-    override fun onResume() {
-        super.onResume()
-        serviceState = if (serviceRunning()) {
-            ServiceState.WORKING
-        } else {
-            ServiceState.STOPPED
-        }
-    }
-
     private fun updateUI() {
         val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val configName = prefs.getString(PREFS_AUTH_CONFIG_NAME_KEY, null)
