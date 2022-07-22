@@ -145,6 +145,7 @@ public class Uplink implements ServiceConnection {
     @Override
     public void onBindingDied(ComponentName name) {
         Log.e(TAG, "uplink binding died");
+        state = UplinkServiceState.SERVICE_STOPPED;
         context.unbindService(this);
     }
 
