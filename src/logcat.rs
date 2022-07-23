@@ -54,26 +54,29 @@ impl LogLevel {
 #[derive(Debug, Serialize)]
 struct LogEntry {
     level: LogLevel,
+    log_timestamp: String,
     tag: String,
-    msg: String,
+    message: String,
+    line: String,
 }
 
 lazy_static::lazy_static! {
-    pub static ref SPACES_RE: regex::Regex = regex::Regex::new(r"\s+").unwrap();
+    pub static ref LOGCAT_RE: regex::Regex = regex::Regex::new(r#"^(\S+\s+\S+)\s+(\w)/(.+?)\(.+?:\s+(.+)$"#).unwrap();
 }
 
 impl LogEntry {
     fn from_string(line: &str) -> Option<Self> {
-        let tokens: Vec<&str> = SPACES_RE.split(line).collect();
-
-        let level = LogLevel::from_str(tokens.get(4)?)?;
-
-        let tag = tokens.get(5)?.to_string();
-
+        let matches = LOGCAT_RE.captures(line)?;
+        let log_timestamp = matches.get(1)?.as_str().to_string();
+        let level = LogLevel::from_str(matches.get(2)?.as_str())?;
+        let tag = matches.get(3)?.as_str().to_string();
+        let message = matches.get(4)?.as_str().to_string();
         Some(Self {
             level,
+            log_timestamp,
             tag,
-            msg: line.to_string(),
+            message,
+            line: line.to_string(),
         })
     }
 
@@ -105,22 +108,22 @@ impl LogcatInstance {
         let kill_switch = Arc::new(Mutex::new(true));
 
         // silence everything
-        let mut filter_spec = vec!["*:S".to_string()];
+        let mut logcat_args = vec!["-v", "time", "*:S"].iter().map(|s| s.to_string()).collect::<Vec<_>>();
         // enable logging for requested tags
         for tag in &logcat_config.tags {
-            filter_spec.push(format!("{}:{}", tag, logcat_config.min_level.to_str()));
+            logcat_args.push(format!("{}:{}", tag, logcat_config.min_level.to_str()));
         }
         // silence logs coming from native module
-        filter_spec.push(format!("{}:S", LOGCAT_TAG));
+        logcat_args.push(format!("{}:S", LOGCAT_TAG));
 
-        log::info!("logcat filter_spec: {:?}", filter_spec);
+        log::info!("logcat args: {:?}", logcat_args);
         {
             let kill_switch = kill_switch.clone();
 
             std::thread::spawn(move || {
                 let mut log_index = 1;
                 match Command::new("logcat")
-                    .args(filter_spec.iter().collect::<Vec<_>>())
+                    .args(logcat_args.iter().collect::<Vec<_>>())
                     .stdout(Stdio::piped())
                     .spawn() {
                     Ok(mut logcat) => {
