@@ -37,8 +37,8 @@ class UplinkService : Service() {
                     
                     [stats]
                     enabled = true
-                    process_names = ["android.process.acore"]
-                    update_period = 2
+                    process_names = ["io.bytebeam.uplink.configurator:uplink_service"]
+                    update_period = 10
                 """.trimIndent(),
                 applicationContext.filesDir.absolutePath
             ),
