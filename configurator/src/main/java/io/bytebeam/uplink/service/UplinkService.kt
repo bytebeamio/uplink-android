@@ -34,6 +34,11 @@ class UplinkService : Service() {
                 """
                     [persistence]
                     path = "%s/uplink"
+                    
+                    [stats]
+                    enabled = true
+                    process_names = ["android.process.acore"]
+                    update_period = 2
                 """.trimIndent(),
                 applicationContext.filesDir.absolutePath
             ),
