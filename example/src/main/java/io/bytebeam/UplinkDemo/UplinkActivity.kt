@@ -89,6 +89,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                     log("processAction: waiting for service to become available")
                     Thread.sleep(1000)
                 }
+                log("sending response: $i")
                 uplink?.respondToAction(
                     ActionResponse(
                         action.id,
@@ -103,7 +104,6 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                         arrayOf()
                     )
                 )
-                log("sending response: $i")
                 Thread.sleep(1000)
             }
         }

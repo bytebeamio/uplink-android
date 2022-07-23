@@ -11,7 +11,7 @@ public class ActionResponse implements Parcelable {
     String id;
     int sequence;
     long timestamp;
-    String status;
+    String state;
     int progress;
     String[] errors;
 
@@ -45,8 +45,8 @@ public class ActionResponse implements Parcelable {
     public UplinkPayload toPayload() {
         JSONObject payload = new JSONObject();
         try {
-            payload.put("id", id);
-            payload.put("status", status);
+            payload.put("action_id", id);
+            payload.put("state", state);
             payload.put("progress`", progress);
             JSONArray errorsJson = new JSONArray();
             for (String error : errors) {
@@ -74,7 +74,7 @@ public class ActionResponse implements Parcelable {
         dest.writeString(id);
         dest.writeInt(sequence);
         dest.writeLong(timestamp);
-        dest.writeString(status);
+        dest.writeString(state);
         dest.writeInt(progress);
         dest.writeStringArray(errors);
     }
