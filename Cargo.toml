@@ -18,6 +18,7 @@ log = "0.4"
 android_logger = "0.11.0"
 log-panics = "2.0"
 lazy_static = "1.4.0"
+chrono = "0.4.19"
 tokio = { version = "1", features = ["full"] }
 uplink = { git = "https://github.com/bytebeamio/uplink", branch = "android_pty" }
 

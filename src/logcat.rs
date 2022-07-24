@@ -2,9 +2,11 @@ use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use chrono::{Datelike, DateTime, Local, Timelike};
 
 use serde::{Deserialize, Serialize};
 use uplink::{Payload, Stream};
+use uplink::actions::controller::Error::Time;
 use crate::LOGCAT_TAG;
 
 #[derive(Debug, Deserialize)]
@@ -62,6 +64,8 @@ struct LogEntry {
 
 lazy_static::lazy_static! {
     pub static ref LOGCAT_RE: regex::Regex = regex::Regex::new(r#"^(\S+\s+\S+)\s+(\w)/(.+?)\(.+?:\s+(.+)$"#).unwrap();
+    // 07-24 14:52:18.220
+    pub static ref LOGCAT_TIME_RE: regex::Regex = regex::Regex::new(r#"^(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)\.(\d+)$"#).unwrap();
 }
 
 impl LogEntry {
@@ -145,7 +149,9 @@ impl LogcatInstance {
                                         }
                                         let next_line = next_line.trim();
                                         if let Some(entry) = LogEntry::from_string(next_line) {
-                                            log_stream.push(entry.to_payload(log_index).unwrap()).unwrap();
+                                            let mut payload = entry.to_payload(log_index).unwrap();
+                                            payload.timestamp = parse_logcat_time(entry.log_timestamp.as_str()).unwrap_or(payload.timestamp);
+                                            log_stream.push(payload).unwrap();
                                             log_index += 1;
                                         } else {
                                             log::error!("log line in unknown format: {}", next_line);
@@ -169,6 +175,18 @@ impl LogcatInstance {
             kill_switch,
         }
     }
+}
+
+pub fn parse_logcat_time(s: &str) -> Option<u64> {
+    let mut matches = LOGCAT_TIME_RE.captures(s)?;
+    let date = Local::now()
+        .with_month(matches.get(1)?.as_str().parse::<u32>().ok()?)?
+        .with_day(matches.get(2)?.as_str().parse::<u32>().ok()?)?
+        .with_hour(matches.get(3)?.as_str().parse::<u32>().ok()?)?
+        .with_minute(matches.get(4)?.as_str().parse::<u32>().ok()?)?
+        .with_second(matches.get(5)?.as_str().parse::<u32>().ok()?)?
+        .with_nanosecond(matches.get(6)?.as_str().parse::<u32>().ok()? * 1_000_000)?;
+    Some(date.timestamp_millis() as _)
 }
 
 impl Drop for LogcatInstance {

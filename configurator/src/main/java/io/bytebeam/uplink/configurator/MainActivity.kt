@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     startActivityForResult(
                         Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                             type = "application/json"
                         },
                         PICK_AUTH_CONFIG
