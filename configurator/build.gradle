@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
-    id 'org.mozilla.rust-android-gradle.rust-android'
 }
 
 Properties localProps = new Properties()
@@ -60,12 +59,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     implementation project(path: ':lib')
-}
-
-cargo {
-    module = "../"
-    libname = "uplink_android"
-    targets = ["x86", "x86_64", "arm", "arm64"]
 }
 
 tasks.whenTaskAdded { task ->
