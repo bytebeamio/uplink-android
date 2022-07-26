@@ -1,10 +1,10 @@
 plugins {
-    id 'com.android.application'
-    id 'kotlin-android'
+    id "com.android.application"
+    id "kotlin-android"
 }
 
 Properties localProps = new Properties()
-localProps.load(project.rootProject.file('local.properties').newDataInputStream())
+localProps.load(project.rootProject.file("local.properties").newDataInputStream())
 
 android {
     compileSdk 32
@@ -39,7 +39,7 @@ android {
                 signingConfig signingConfigs.release
             }
 
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
 
@@ -48,25 +48,25 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = "1.8"
     }
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.8.0'
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'com.google.android.material:material:1.6.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation "androidx.core:core-ktx:1.8.0"
+    implementation "androidx.appcompat:appcompat:1.4.2"
+    implementation "com.google.android.material:material:1.6.1"
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
 
-    implementation project(path: ':lib')
+    implementation project(path: ":lib")
 }
 
 def rustBasePath = localProps.getProperty("uplink.dir")
 def archTriplets = [
-//        'armeabi-v7a': 'armv7-linux-androideabi',
-//        'arm64-v8a'  : 'aarch64-linux-android',
-'x86'        : 'i686-linux-android',
-//        'x86_64'     : 'x86_64-linux-android',
+//        "armeabi-v7a": "armv7-linux-androideabi",
+//        "arm64-v8a"  : "aarch64-linux-android",
+"x86"        : "i686-linux-android",
+//        "x86_64"     : "x86_64-linux-android",
 ]
 
 tasks.create(name: "checkout-repo", description: "checkout android_exe branch in uplink") {
@@ -83,10 +83,10 @@ archTriplets.each { arch, target ->
 
         workingDir rustBasePath
         environment ANDROID_NDK_HOME: android.ndkDirectory
-        commandLine 'cargo', 'ndk', "--target=${target}", "--platform=23", 'build', '--bin', 'uplink'
+        commandLine "cargo", "ndk", "--target=${target}", "--platform=23", "build", "--bin", "uplink"
     }
 
-    // Copy exe into this module's assets directory
+    // Copy exe into this module"s assets directory
     tasks.create(name: "rust-deploy-${arch}", type: Copy, dependsOn: "sync-rust-deps-${arch}", description: "Copy rust libs for (${arch}) to jniLibs") {
         from "${rustBasePath}/target/${target}/debug"
         include "uplink"
@@ -102,7 +102,7 @@ archTriplets.each { arch, target ->
     // Hook up clean tasks
     tasks.create(name: "clean-${arch}", type: Delete, description: "Deleting built libs for ${arch}") {
         delete fileTree("src/main/jniLibs/${arch}") {
-            include '*.so'
+            include "*.so"
         }
     }
 
@@ -110,7 +110,7 @@ archTriplets.each { arch, target ->
 }
 
 tasks.whenTaskAdded { task ->
-    if ((task.name == 'javaPreCompileDebug' || task.name == 'javaPreCompileRelease')) {
-        task.dependsOn 'cargoBuild'
+    if ((task.name == "javaPreCompileDebug" || task.name == "javaPreCompileRelease")) {
+        task.dependsOn "cargoBuild"
     }
 }
