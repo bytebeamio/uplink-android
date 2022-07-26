@@ -22,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
+import java.io.File
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
@@ -55,6 +56,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        try {
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat", "/sys/kernel/boot_params/version"))
+            process.inputStream.readBytes();
+        } catch (e: Exception) {
+            Log.e(TAG, "unable to access sysfs", e)
+            Toast.makeText(this, "This app requires root privileges", Toast.LENGTH_LONG).show()
+            finish()
+        }
 
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
 
