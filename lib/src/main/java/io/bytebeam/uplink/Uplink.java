@@ -25,7 +25,7 @@ public class Uplink implements ServiceConnection {
     private Messenger serviceHandle;
     private UplinkServiceState state = UplinkServiceState.UNINITIALIZED;
 
-    public UplinkServiceState getState() {
+    public synchronized UplinkServiceState getState() {
         return state;
     }
 
@@ -61,7 +61,7 @@ public class Uplink implements ServiceConnection {
      *
      * @throws UplinkTerminatedException if the uplink service has terminated for some reason
      */
-    public void subscribe(ActionSubscriber subscriber) throws UplinkTerminatedException {
+    public synchronized void subscribe(ActionSubscriber subscriber) throws UplinkTerminatedException {
         stateAssertion();
         Messenger messenger = new Messenger(
                 new Handler(
@@ -69,7 +69,12 @@ public class Uplink implements ServiceConnection {
                         (message) -> {
                             Bundle b = message.getData();
                             b.setClassLoader(UplinkAction.class.getClassLoader());
-                            subscriber.processAction(b.getParcelable(DATA_KEY));
+                            UplinkAction action = b.getParcelable(DATA_KEY);
+                            if (getState() == UplinkServiceState.CONNECTED) {
+                                subscriber.processAction(action);
+                            } else {
+                                Log.w(TAG, String.format("disconnected client recieved action: %s", action.toString()));
+                            }
                             return true;
                         }
                 )
@@ -85,7 +90,7 @@ public class Uplink implements ServiceConnection {
         }
     }
 
-    private void callMethod(int method, Parcelable arg) {
+    private synchronized void callMethod(int method, Parcelable arg) {
         Message call = new Message();
         call.what = method;
         Bundle b = new Bundle();
@@ -120,42 +125,42 @@ public class Uplink implements ServiceConnection {
     /**
      * To be called when the client is done using the uplink service.
      */
-    public void dispose() {
+    public synchronized void dispose() {
         state = UplinkServiceState.DISPOSED;
         context.unbindService(this);
     }
 
     @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
+    public synchronized void onServiceConnected(ComponentName name, IBinder service) {
         state = UplinkServiceState.CONNECTED;
         serviceHandle = new Messenger(service);
         serviceStateCallback.onUplinkReady();
     }
 
     @Override
-    public void onServiceDisconnected(ComponentName name) {
-        if (state != UplinkServiceState.DISPOSED) {
+    public synchronized void onServiceDisconnected(ComponentName name) {
+        if (getState() != UplinkServiceState.DISPOSED) {
             state = UplinkServiceState.SERVICE_STOPPED;
         }
         context.unbindService(this);
     }
 
     @Override
-    public void onBindingDied(ComponentName name) {
+    public synchronized void onBindingDied(ComponentName name) {
         Log.e(TAG, "uplink binding died");
         state = UplinkServiceState.SERVICE_STOPPED;
         context.unbindService(this);
     }
 
     @Override
-    public void onNullBinding(ComponentName name) {
+    public synchronized void onNullBinding(ComponentName name) {
         Log.i(TAG, "uplink service not ready");
         state = UplinkServiceState.SERVICE_STOPPED;
         context.unbindService(this);
     }
 
     private void stateAssertion() throws UplinkTerminatedException {
-        switch (state) {
+        switch (getState()) {
             case SERVICE_STOPPED:
                 throw new UplinkTerminatedException();
             case UNINITIALIZED:
@@ -174,14 +179,15 @@ public class Uplink implements ServiceConnection {
     }
 
     public static boolean serviceRunning(Context context) {
-        Cursor cursor = context.getContentResolver().query(
+        try (Cursor cursor = context.getContentResolver().query(
                 Uri.parse("content://io.bytebeam.uplink.servicestate"),
-                new String[] {},
+                new String[]{},
                 null,
-                new String[] {},
+                new String[]{},
                 null
-        );
-        return cursor != null;
+        )) {
+            return cursor != null;
+        }
     }
 }
 

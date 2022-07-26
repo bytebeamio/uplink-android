@@ -71,7 +71,7 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscribe
                         }
                     )
                 )
-                Thread.sleep(100)
+                Thread.sleep(1000)
             }
 
             log("uplink client disconnected")
