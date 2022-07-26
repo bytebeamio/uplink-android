@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "io.bytebeam.uplink.configurator"
-        minSdk 21
+        minSdk 23
         targetSdk 32
         versionCode 1
         versionName sdk_version
@@ -59,6 +59,55 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
     implementation project(path: ':lib')
+}
+
+def rustBasePath = localProps.getProperty("uplink.dir")
+def archTriplets = [
+//        'armeabi-v7a': 'armv7-linux-androideabi',
+//        'arm64-v8a'  : 'aarch64-linux-android',
+'x86'        : 'i686-linux-android',
+//        'x86_64'     : 'x86_64-linux-android',
+]
+
+tasks.create("checkout-repo", description: "checkout android_exe branch in uplink") {
+    exec {
+
+    }
+}
+
+archTriplets.each { arch, target ->
+
+    // Build with cargo
+    tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}") {
+        inputs.files "${rustBasePath}/Cargo.toml", "${rustBasePath}/Cargo.lock", "${rustBasePath}/uplink"
+        outputs.files "${rustBasePath}/target/${target}/debug/uplink"
+
+        workingDir rustBasePath
+        environment ANDROID_NDK_HOME: android.ndkDirectory
+        commandLine 'cargo', 'ndk', "--target=${target}", "--platform=23", 'build', '--bin', 'uplink'
+    }
+
+    // Copy exe into this module's assets directory
+    tasks.create(name: "rust-deploy-${arch}", type: Copy, dependsOn: "sync-rust-deps-${arch}", description: "Copy rust libs for (${arch}) to jniLibs") {
+        from "${rustBasePath}/target/${target}/debug"
+        include "uplink"
+        into "src/main/res/executables/${arch}"
+    }
+
+    // Hook up tasks to execute before building java
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn "rust-deploy-${arch}"
+    }
+    preBuild.dependsOn "rust-deploy-${arch}"
+
+    // Hook up clean tasks
+    tasks.create(name: "clean-${arch}", type: Delete, description: "Deleting built libs for ${arch}") {
+        delete fileTree("src/main/jniLibs/${arch}") {
+            include '*.so'
+        }
+    }
+
+    clean.dependsOn "clean-${arch}"
 }
 
 tasks.whenTaskAdded { task ->
