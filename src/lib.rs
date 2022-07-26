@@ -163,7 +163,7 @@ pub unsafe extern "C" fn Java_io_bytebeam_uplink_service_NativeApi_destroyUplink
     _: JClass,
     context: jlong,
 ) {
-    Box::from_raw(context as *mut UplinkAndroidContext);
+    drop(Box::from_raw(context as *mut UplinkAndroidContext));
 }
 
 #[no_mangle]

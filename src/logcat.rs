@@ -2,11 +2,10 @@ use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use chrono::{Datelike, DateTime, Local, Timelike};
+use chrono::{Datelike, Local, Timelike};
 
 use serde::{Deserialize, Serialize};
 use uplink::{Payload, Stream};
-use uplink::actions::controller::Error::Time;
 use crate::LOGCAT_TAG;
 
 #[derive(Debug, Deserialize)]
@@ -178,7 +177,7 @@ impl LogcatInstance {
 }
 
 pub fn parse_logcat_time(s: &str) -> Option<u64> {
-    let mut matches = LOGCAT_TIME_RE.captures(s)?;
+    let matches = LOGCAT_TIME_RE.captures(s)?;
     let date = Local::now()
         .with_month(matches.get(1)?.as_str().parse::<u32>().ok()?)?
         .with_day(matches.get(2)?.as_str().parse::<u32>().ok()?)?
