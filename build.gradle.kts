@@ -13,7 +13,6 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:7.0.4")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.0")
-        classpath("io.github.bit-man:javagit:0.2.0")
         classpath("org.eclipse.jgit:org.eclipse.jgit:6.2.0.202206071550-r")
     }
 }
