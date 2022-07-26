@@ -69,16 +69,15 @@ def archTriplets = [
 //        'x86_64'     : 'x86_64-linux-android',
 ]
 
-tasks.create("checkout-repo", description: "checkout android_exe branch in uplink") {
-    exec {
-
+tasks.create(name: "checkout-repo", description: "checkout android_exe branch in uplink") {
+    doLast {
     }
 }
 
 archTriplets.each { arch, target ->
 
     // Build with cargo
-    tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}") {
+    tasks.create(name: "cargo-build-${arch}", type: Exec, description: "Building core for ${arch}", dependsOn: "checkout-repo") {
         inputs.files "${rustBasePath}/Cargo.toml", "${rustBasePath}/Cargo.lock", "${rustBasePath}/uplink"
         outputs.files "${rustBasePath}/target/${target}/debug/uplink"
 
