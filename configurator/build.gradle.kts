@@ -86,18 +86,18 @@ val archConfigs = mapOf(
         "i686-linux-android",
         "x86"
     ),
-//    "x64" to ArchConfig(
-//        "x86_64-linux-android",
-//        "x86_64"
-//    ),
-//    "arm32" to ArchConfig(
-//        "armv7-linux-androideabi",
-//        "armeabi-v7a"
-//    ),
-//    "arm64" to ArchConfig(
-//        "aarch64-linux-android",
-//        "arm64-v8a"
-//    )
+   "x64" to ArchConfig(
+       "x86_64-linux-android",
+       "x86_64"
+   ),
+   "arm32" to ArchConfig(
+       "armv7-linux-androideabi",
+       "armeabi-v7a"
+   ),
+   "arm64" to ArchConfig(
+       "aarch64-linux-android",
+       "arm64-v8a"
+   )
 )
 
 archConfigs.forEach { (id, config) ->

@@ -19,10 +19,9 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
-import java.io.File
+import java.io.IOException
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
@@ -59,14 +58,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat", "/sys/kernel/boot_params/version"))
-            process.inputStream.readBytes();
-        } catch (e: Exception) {
+            val version = process.inputStream.bufferedReader().readLine()
+            Log.d(TAG, "boot method version: $version")
+        } catch (e: IOException) {
             Log.e(TAG, "unable to access sysfs", e)
             Toast.makeText(this, "This app requires root privileges", Toast.LENGTH_LONG).show()
             finish()
         }
-
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
 
         findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
         statusView = findViewById(R.id.status_view)
@@ -123,20 +121,6 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         }
 
         handler = Handler(Looper.getMainLooper())
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        when (requestCode) {
-            1 -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "storage permission granted")
-                } else {
-                    Log.d(TAG, "storage permission denied")
-                    Toast.makeText(this, "Storage permission required", Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-        }
     }
 
     private fun updateUI() {
