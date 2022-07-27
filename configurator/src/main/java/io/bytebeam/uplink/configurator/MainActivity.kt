@@ -20,7 +20,6 @@ import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
 import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
@@ -60,23 +59,21 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             finish()
             return
         } else {
-            val exePath = Paths.get(dataDir.absolutePath + "/exe")
-            if (!Files.exists(exePath) || !Files.isExecutable(exePath)) {
-                Log.i(TAG, "copying executable")
-                assets.open("executables/${ourArchitecture.assetId}/uplink").use {
-                    Files.copy(it, exePath)
-                }
-                Runtime.getRuntime().exec(arrayOf("chmod", "+x", exePath.toString())).let {
-                    it.waitFor()
-                    if (it.exitValue() != 0) {
-                        Log.e(TAG, "executable chmod failed")
-                        Files.delete(exePath)
-                        Toast.makeText(this, "failed to setup uplink", Toast.LENGTH_LONG).show()
-                        finish()
-                        return
-                    } else {
-                        Log.i(TAG, "executable ready")
+            if (!exePath.exists() || !exePath.canExecute()) {
+                try {
+                    Log.i(TAG, "copying executable")
+                    assets.open("executables/${ourArchitecture.assetId}/uplink").use {
+                        it.copyTo(exePath.outputStream())
                     }
+                    Log.i(TAG, "setting executable bit")
+                    exePath.setExecutable(true, false)
+                    Log.i(TAG, "executable ready")
+                } catch (e: Exception) {
+                    Log.e(TAG, "failed to setup uplink", e)
+                    Toast.makeText(this, "failed to setup uplink", Toast.LENGTH_LONG).show()
+                    finish()
+                    exePath.delete()
+                    return
                 }
             }
         }
@@ -100,7 +97,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             finish()
             return
         }
-h
+
         findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)

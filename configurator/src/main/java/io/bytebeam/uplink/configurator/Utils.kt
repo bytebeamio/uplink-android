@@ -1,5 +1,9 @@
 package io.bytebeam.uplink.configurator
 
+import android.content.Context
+import java.io.File
+import java.nio.file.Paths
+
 abstract class Architecture {
     abstract val assetId: String
 }
@@ -38,3 +42,18 @@ val ourArchitecture = run {
         }
     }
 }
+
+val Context.exePath: File
+    get() = File(filesDir.absolutePath + "/exe")
+
+val Context.uplinkConfigPath: File
+    get() = File(filesDir.absolutePath + "/config.toml")
+
+val Context.deviceConfigPath: File
+    get() = File(filesDir.absolutePath + "/device.json")
+
+val Context.persistenceDir: File
+    get() = File(filesDir.absolutePath + "/persistence")
+
+val Context.otaDir: File
+    get() = File(filesDir.absolutePath + "/ota")
