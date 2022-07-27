@@ -58,9 +58,18 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
 
         try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat", "/sys/kernel/boot_params/version"))
+            process.waitFor()
+            if (process.exitValue() != 0) {
+                Log.e(TAG, "process failed, status: ${process.exitValue()}\noutput:\n${process.errorStream.bufferedReader().readText()}")
+                throw Exception("Unable to read boot params")
+            }
             val version = process.inputStream.bufferedReader().readLine()
-            Log.d(TAG, "boot method version: $version")
-        } catch (e: IOException) {
+            if (version == null) {
+                Log.e(TAG, "file read failed")
+                throw Exception("Unable to read boot params")
+            }
+            Log.i(TAG, "boot method version: $version")
+        } catch (e: Exception) {
             Log.e(TAG, "unable to access sysfs", e)
             Toast.makeText(this, "This app requires root privileges", Toast.LENGTH_LONG).show()
             finish()
