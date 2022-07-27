@@ -1,13 +1,11 @@
 package io.bytebeam.uplink.configurator
 
-import android.Manifest
 import android.app.ActivityManager
 import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -21,7 +19,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
-import java.io.IOException
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
@@ -56,6 +53,15 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        if (ourArchitecture is UnknownArchitecture) {
+            Toast.makeText(this, "This cpu architecture (${ourArchitecture.name}) is not supported", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        } else {
+            // TODO: if not extracted
+            // TODO: extract to a suitable location
+        }
+
         try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "cat", "/sys/kernel/boot_params/version"))
             process.waitFor()
@@ -73,6 +79,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             Log.e(TAG, "unable to access sysfs", e)
             Toast.makeText(this, "This app requires root privileges", Toast.LENGTH_LONG).show()
             finish()
+            return
         }
 
         findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
