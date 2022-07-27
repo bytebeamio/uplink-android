@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     if (it.exitValue() != 0) {
                         Log.e(TAG, "executable chmod failed")
                         Files.delete(exePath)
+                        Toast.makeText(this, "failed to setup uplink", Toast.LENGTH_LONG).show()
                         finish()
                         return
                     } else {
@@ -99,7 +100,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             finish()
             return
         }
-
+h
         findViewById<TextView>(R.id.version_view).text = BuildConfig.VERSION_NAME
         statusView = findViewById(R.id.status_view)
         selectBtn = findViewById(R.id.select_config_btn)

@@ -28,9 +28,13 @@ val ourArchitecture = run {
             "x86_64" -> X64
             "x86" -> X86
             "arm64" -> ARM64
-            // TODO: verify uname output on arm32
-            "arm" -> ARM
-            else -> UnknownArchitecture(name)
+            else -> {
+                if (name.contains("arm")) {
+                    ARM
+                } else {
+                    UnknownArchitecture(name)
+                }
+            }
         }
     }
 }
