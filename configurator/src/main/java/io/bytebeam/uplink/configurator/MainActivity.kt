@@ -19,6 +19,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
@@ -58,8 +60,24 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             finish()
             return
         } else {
-            // TODO: if not extracted
-            // TODO: extract to a suitable location
+            val exePath = Paths.get(dataDir.absolutePath + "/exe")
+            if (!Files.exists(exePath) || !Files.isExecutable(exePath)) {
+                Log.i(TAG, "copying executable")
+                assets.open("executables/${ourArchitecture.assetId}/uplink").use {
+                    Files.copy(it, exePath)
+                }
+                Runtime.getRuntime().exec(arrayOf("chmod", "+x", exePath.toString())).let {
+                    it.waitFor()
+                    if (it.exitValue() != 0) {
+                        Log.e(TAG, "executable chmod failed")
+                        Files.delete(exePath)
+                        finish()
+                        return
+                    } else {
+                        Log.i(TAG, "executable ready")
+                    }
+                }
+            }
         }
 
         try {
@@ -74,7 +92,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                 Log.e(TAG, "file read failed")
                 throw Exception("Unable to read boot params")
             }
-            Log.i(TAG, "boot method version: $version")
+            Log.i(TAG, "sysfs test passed")
         } catch (e: Exception) {
             Log.e(TAG, "unable to access sysfs", e)
             Toast.makeText(this, "This app requires root privileges", Toast.LENGTH_LONG).show()

@@ -21,17 +21,16 @@ class UnknownArchitecture(val name: String) : Architecture() {
         get() = throw IllegalStateException("can't get assetId for UnknownArchitecture")
 }
 
-private fun findArchitecture() : Architecture {
+val ourArchitecture = run {
     Runtime.getRuntime().exec(arrayOf("uname", "-m")).let {
         it.waitFor()
-        when (val name = it.inputStream.bufferedReader().readText()) {
-            "x86_64" -> return X64
-            "x86" -> return X86
-            "arm64" -> return ARM64
-            "arm" -> return ARM
-            else -> return UnknownArchitecture(name)
+        when (val name = it.inputStream.bufferedReader().readText().trim()) {
+            "x86_64" -> X64
+            "x86" -> X86
+            "arm64" -> ARM64
+            // TODO: verify uname output on arm32
+            "arm" -> ARM
+            else -> UnknownArchitecture(name)
         }
     }
 }
-
-val ourArchitecture = findArchitecture()
