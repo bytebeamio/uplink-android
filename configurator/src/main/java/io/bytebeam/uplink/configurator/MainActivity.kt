@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // setup executable
         if (ourArchitecture is UnknownArchitecture) {
             Toast.makeText(this, "This cpu architecture (${ourArchitecture.name}) is not supported", Toast.LENGTH_LONG).show()
             finish()

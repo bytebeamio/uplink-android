@@ -31,10 +31,11 @@ val ourArchitecture = run {
         when (val name = it.inputStream.bufferedReader().readText().trim()) {
             "x86_64" -> X64
             "x86" -> X86
-            "arm64" -> ARM64
             else -> {
-                if (name.contains("arm")) {
+                if (name.contains("armv7")) {
                     ARM
+                } else if (name.contains("arm")) {
+                    ARM64
                 } else {
                     UnknownArchitecture(name)
                 }
