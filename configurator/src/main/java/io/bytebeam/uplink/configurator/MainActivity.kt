@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.*
 import android.provider.Settings
 import android.util.Log
@@ -17,8 +16,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.jaiselrahman.filepicker.activity.FilePickerActivity
-import com.jaiselrahman.filepicker.model.MediaFile
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
 import java.util.concurrent.Executors

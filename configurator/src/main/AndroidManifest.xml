@@ -19,13 +19,13 @@
             android:theme="@style/Theme.Uplink">
         <activity
                 android:name=".FilePicker"
-                android:exported="true"/>
+                android:exported="false"/>
 
         <provider
-                android:name=".ServiceStateProvider"
-                android:authorities="io.bytebeam.uplink.servicestate"
                 android:enabled="true"
-                android:exported="true"/>
+                android:exported="true"
+                android:authorities="io.bytebeam.uplink.servicestate"
+                android:name="io.bytebeam.uplink.configurator.ServiceStateProvider" />
 
         <activity
                 android:name=".MainActivity"
