@@ -169,40 +169,25 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         when (requestCode) {
             PICK_AUTH_CONFIG -> {
                 try {
-                    if (resultCode == RESULT_OK) {
-                        val files = data?.getParcelableArrayListExtra<MediaFile>(FilePickerActivity.MEDIA_FILES)
-                        if (files == null || files.isEmpty()) {
-                            throw Exception("no file selected")
+                    if (resultCode == RESULT_OK && data != null) {
+                        val configName = data.getStringExtra(FILE_NAME_KEY)
+                        val jsonString = data.getStringExtra(FILE_CONTENT_KEY)
+                        try {
+                            JSONObject(jsonString)
+                            // TODO: verify properties
+                        } catch (e: Exception) {
+                            throw Exception("Invalid JSON")
                         }
-                        if (files[0].mimeType != "application/json") {
-                            throw Exception("file type ${files[0].mimeType} is invalid")
+                        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
+                            it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
+                            it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
+                            it.commit()
                         }
-                        val uri = files[0].uri
-                        if (uri != null) {
-                            val inputStream = contentResolver.openInputStream(uri)
-                            val configName = uri.lastPathSegment ?: uri.path ?: uri.toString()
-                            val jsonString = try {
-                                inputStream?.bufferedReader()?.use { it.readText() }
-                            } catch (e: Exception) {
-                                throw Exception("Could not read file")
-                            } ?: throw Exception("Could not read file")
-                            try {
-                                JSONObject(jsonString)
-                                // TODO: verify properties
-                            } catch (e: Exception) {
-                                throw Exception("Invalid JSON")
-                            }
-                            applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
-                                it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
-                                it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
-                                it.commit()
-                            }
-                            startService(Intent().also {
-                                it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
-                                it.putExtra(DATA_KEY, jsonString)
-                            })
-                            connectToService()
-                        }
+                        startService(Intent().also {
+                            it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                            it.putExtra(DATA_KEY, jsonString)
+                        })
+                        connectToService()
                     } else {
                         throw Exception("no file selected")
                     }

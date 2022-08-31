@@ -9,6 +9,7 @@ import android.widget.*
 import java.io.File
 import java.util.*
 
+const val FILE_NAME_KEY = "FILE_NAME"
 const val FILE_CONTENT_KEY = "FILE_CONTENT"
 
 class FilePicker : AppCompatActivity() {
@@ -34,7 +35,8 @@ class FilePicker : AppCompatActivity() {
                 } else {
                     try {
                         val content = File(_currDir, entry).readText()
-                        setResult(0, Intent().also {
+                        setResult(RESULT_OK, Intent().also {
+                            it.putExtra(FILE_NAME_KEY, entry)
                             it.putExtra(FILE_CONTENT_KEY, content)
                         })
                         finish()
