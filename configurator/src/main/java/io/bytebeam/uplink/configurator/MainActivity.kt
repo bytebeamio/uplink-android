@@ -8,23 +8,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
-import android.os.Message
-import android.os.Messenger
+import android.net.Uri
+import android.os.*
+import android.provider.Settings
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.jaiselrahman.filepicker.activity.FilePickerActivity
+import com.jaiselrahman.filepicker.model.MediaFile
 import io.bytebeam.uplink.common.Constants.*
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
 const val PICK_AUTH_CONFIG = 1
+const val ALLOW_MANAGE_STORAGE = 2
 const val TAG = "MainActivity"
 const val PREFS_SERVICE_RUNNING_KEY = "serviceState"
 
@@ -120,6 +120,17 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
             1 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(TAG, "storage permission granted")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        if (!Environment.isExternalStorageManager()) {
+                            Log.d(TAG, "asking for storage manager permission")
+                            Toast.makeText(this, "please grant storage management permissions", Toast.LENGTH_LONG)
+                                .show()
+                            startActivityForResult(
+                                Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                                ALLOW_MANAGE_STORAGE,
+                            )
+                        }
+                    }
                 } else {
                     Log.d(TAG, "storage permission denied")
                     Toast.makeText(this, "Storage permission required", Toast.LENGTH_LONG).show()
@@ -161,36 +172,55 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             PICK_AUTH_CONFIG -> {
-                if (resultCode == RESULT_OK) {
-                    val uri = data?.data
-                    if (uri != null) {
-                        val inputStream = contentResolver.openInputStream(uri)
-                        val jsonString = inputStream?.bufferedReader()?.use { it.readText() }
-                        val configName = uri.lastPathSegment ?: uri.path ?: uri.toString()
-                        if (jsonString == null) {
-                            Toast.makeText(this, "Could not read file", Toast.LENGTH_LONG).show()
-                            return
+                try {
+                    if (resultCode == RESULT_OK) {
+                        val files = data?.getParcelableArrayListExtra<MediaFile>(FilePickerActivity.MEDIA_FILES)
+                        if (files == null || files.isEmpty()) {
+                            throw Exception("no file selected")
                         }
-                        try {
-                            JSONObject(jsonString)
-                            // TODO: verify properties
-                        } catch (e: Exception) {
-                            Toast.makeText(this, "Invalid JSON", Toast.LENGTH_LONG).show()
-                            return
+                        if (files[0].mimeType != "application/json") {
+                            throw Exception("file type ${files[0].mimeType} is invalid")
                         }
-                        applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
-                            it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
-                            it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
-                            it.commit()
+                        val uri = files[0].uri
+                        if (uri != null) {
+                            val inputStream = contentResolver.openInputStream(uri)
+                            val configName = uri.lastPathSegment ?: uri.path ?: uri.toString()
+                            val jsonString = try {
+                                inputStream?.bufferedReader()?.use { it.readText() }
+                            } catch (e: Exception) {
+                                throw Exception("Could not read file")
+                            } ?: throw Exception("Could not read file")
+                            try {
+                                JSONObject(jsonString)
+                                // TODO: verify properties
+                            } catch (e: Exception) {
+                                throw Exception("Invalid JSON")
+                            }
+                            applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().let {
+                                it.putString(PREFS_AUTH_CONFIG_NAME_KEY, configName)
+                                it.putString(PREFS_AUTH_CONFIG_KEY, jsonString)
+                                it.commit()
+                            }
+                            startService(Intent().also {
+                                it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
+                                it.putExtra(DATA_KEY, jsonString)
+                            })
+                            connectToService()
                         }
-                        startService(Intent().also {
-                            it.component = ComponentName(CONFIGURATOR_APP_ID, UPLINK_SERVICE_ID)
-                            it.putExtra(DATA_KEY, jsonString)
-                        })
-                        connectToService()
+                    } else {
+                        throw Exception("no file selected")
                     }
-                } else {
+                } catch (e: Exception) {
+                    Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
                     serviceState = ServiceState.STOPPED
+                }
+            }
+            ALLOW_MANAGE_STORAGE -> {
+                if (!Environment.isExternalStorageManager()) {
+                    Toast.makeText(this, "Need external storage permissions", Toast.LENGTH_LONG).show()
+                    finish()
+                } else {
+                    Log.d(TAG, "storage manager permission granted")
                 }
             }
         }
