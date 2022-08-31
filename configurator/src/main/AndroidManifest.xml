@@ -6,7 +6,9 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage"/>
+    <uses-permission
+            android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+            tools:ignore="ScopedStorage"/>
 
     <application
             android:allowBackup="true"
@@ -15,12 +17,15 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.Uplink">
+        <activity
+                android:name=".FilePicker"
+                android:exported="true"/>
 
         <provider
-                android:enabled="true"
-                android:exported="true"
+                android:name=".ServiceStateProvider"
                 android:authorities="io.bytebeam.uplink.servicestate"
-                android:name="io.bytebeam.uplink.configurator.ServiceStateProvider" />
+                android:enabled="true"
+                android:exported="true"/>
 
         <activity
                 android:name=".MainActivity"

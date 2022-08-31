@@ -16,6 +16,7 @@ import io.bytebeam.uplink.common.UplinkPayload
 import io.bytebeam.uplink.configurator.BuildConfig
 import io.bytebeam.uplink.configurator.MainActivity
 import io.bytebeam.uplink.configurator.R
+import io.bytebeam.uplink.configurator.showToast
 
 class UplinkService : Service() {
     var subscribers: MutableList<Messenger> = ArrayList()
@@ -24,7 +25,7 @@ class UplinkService : Service() {
         val authConfig = intent.getStringExtra(DATA_KEY)
         if (authConfig == null) {
             Log.d(TAG, "device config not found")
-            Toast.makeText(this, "device config not found", Toast.LENGTH_LONG).show()
+            showToast("device config not found")
             stopSelf()
             return START_NOT_STICKY
         }

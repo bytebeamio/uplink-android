@@ -99,11 +99,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     serviceState = ServiceState.WORKING
                     @Suppress("DEPRECATION")
                     startActivityForResult(
-                        Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                            addCategory(Intent.CATEGORY_OPENABLE)
-                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-                            type = "application/json"
-                        },
+                        Intent(this, FilePicker::class.java),
                         PICK_AUTH_CONFIG
                     )
 
@@ -133,7 +129,7 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                     }
                 } else {
                     Log.d(TAG, "storage permission denied")
-                    Toast.makeText(this, "Storage permission required", Toast.LENGTH_LONG).show()
+                    showToast("Storage permission required")
                     finish()
                 }
             }
@@ -211,13 +207,13 @@ class MainActivity : AppCompatActivity(), ServiceConnection {
                         throw Exception("no file selected")
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
+                    showToast(e.message)
                     serviceState = ServiceState.STOPPED
                 }
             }
             ALLOW_MANAGE_STORAGE -> {
                 if (!Environment.isExternalStorageManager()) {
-                    Toast.makeText(this, "Need external storage permissions", Toast.LENGTH_LONG).show()
+                    showToast("Need external storage permissions")
                     finish()
                 } else {
                     Log.d(TAG, "storage manager permission granted")
