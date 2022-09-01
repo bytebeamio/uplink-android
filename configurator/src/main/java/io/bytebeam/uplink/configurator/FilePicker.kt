@@ -4,8 +4,8 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import java.io.File
 import java.util.*
 
@@ -15,6 +15,7 @@ const val FILE_CONTENT_KEY = "FILE_CONTENT"
 class FilePicker : AppCompatActivity() {
     lateinit var upBtn: Button
     lateinit var filesListView: ListView
+    val storageInfos = StorageUtils.getStorageList()
 
     lateinit var _currDir: String
 
@@ -23,7 +24,6 @@ class FilePicker : AppCompatActivity() {
             return _currDir
         }
         set(newPath) {
-            Log.e(TAG, newPath)
             _currDir = newPath
             val entries = genEntries(_currDir)
             val adapter = ArrayAdapter(this, R.layout.file_list_entry, entries)
@@ -66,6 +66,18 @@ class FilePicker : AppCompatActivity() {
             }
         }
         filesListView = findViewById(R.id.files_list)
+
+        findViewById<Button>(R.id.select_storage_btn).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Select a storage device")
+                .setAdapter(
+                    ArrayAdapter(this, R.layout.file_list_entry, storageInfos.map { it.displayName })
+                ) { _, which ->
+                    currDir = storageInfos[which].path
+                }
+                .create()
+                .show()
+        }
 
         currDir = Environment.getExternalStorageDirectory().absolutePath
     }

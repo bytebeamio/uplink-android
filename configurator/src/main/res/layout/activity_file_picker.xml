@@ -16,4 +16,8 @@
               android:layout_weight="1"
               android:id="@+id/files_list"
     />
+    <Button android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/select_storage_btn"
+            android:text="Select Storage" />
 </androidx.appcompat.widget.LinearLayoutCompat>
