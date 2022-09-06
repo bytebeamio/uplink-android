@@ -36,6 +36,7 @@ jobs:
         uses: timheuer/base64-to-file@v1.1
         with:
           fileName: local.properties
+          fileDir: .
           encodedString: ${{ secrets.LOCAL_PROPERTIES }}
       - name: Print local.properties
         id: vars1
