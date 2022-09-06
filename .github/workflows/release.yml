@@ -1,40 +1,50 @@
-name: Release
+name: Android Build
 
 on:
-  release:
-    types: [published]
-
-env:
-  RUSTFLAGS: -Dwarnings
-  RUST_BACKTRACE: 1
+  push:
+    branches: [ "ci_target" ]
 
 jobs:
-  release:
-    name: Release AAR
+  build:
+
     runs-on: ubuntu-latest
-    container: devduttshenoi/androidxbuild:0.1
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+#      - name: set up JDK 11
+#        uses: actions/setup-java@v3
+#        with:
+#          java-version: '11'
+#          distribution: 'temurin'
+#          cache: gradle
+#
+#      - name: Setup Android SDK
+#        uses: android-actions/setup-android@v2
+#
+#      - name: Setup Android NDK
+#        uses: nttld/setup-ndk@v1.0.6
+#        with:
+#          ndk-version: 25.0.8775105
+
+      - name: Save keystore.jks
+        uses: timheuer/base64-to-file@v1.1
         with:
-            toolchain: stable
-            override: true
+          fileName: keystore.jks
+          encodedString: ${{ secrets.KEYSTORE_JKS }}
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2
+      - name: Save local.properties
+        uses: timheuer/base64-to-file@v1.1
         with:
-          distribution: 'zulu'
-          java-version: 11
+          fileName: local.properties
+          encodedString: ${{ secrets.LOCAL_PROPERTIES }}
+      - name: Print local.properties
+        id: vars
+        run: echo ::set-output name=version::$(cat local.properties)
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
-
-      - name: Build AAR
-        run: ./gradlew --no-daemon build
-
-      - name: Upload AAR
-        uses: JasonEtco/upload-to-release@master
-        with:
-          args: lib/build/outputs/aar/uplink-release.aar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: rust-toolchain
+#        uses: actions-rs/toolchain@v1.0.6
+#
+#      - name: Grant execute permission for gradlew
+#        run: chmod +x gradlew
+#      - name: Build with Gradle
+#        run: ./gradlew build
