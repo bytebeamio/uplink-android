@@ -9,4 +9,3 @@ dependencyResolutionManagement {
 rootProject.name = "uplink_android"
 include ':lib'
 include ':example'
-include ':configurator'

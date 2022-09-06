@@ -9,9 +9,9 @@ import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import io.bytebeam.uplink.common.exceptions.ConfiguratorNotInstalledException
-import io.bytebeam.uplink.Uplink
-import io.bytebeam.uplink.UplinkStateCallback
-import io.bytebeam.uplink.UplinkServiceState
+import io.bytebeam.uplink.trash.Uplink
+import io.bytebeam.uplink.trash.UplinkStateCallback
+import io.bytebeam.uplink.trash.UplinkServiceState
 import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
 import io.bytebeam.uplink.common.UplinkAction
@@ -20,7 +20,8 @@ import io.bytebeam.uplink.common.exceptions.UplinkServiceNotRunningException
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
-class UplinkActivity : AppCompatActivity(), UplinkStateCallback, ActionSubscriber {
+class UplinkActivity : AppCompatActivity(), UplinkStateCallback,
+    ActionSubscriber {
     val logs = ArrayDeque<String>()
     lateinit var logView: TextView
 

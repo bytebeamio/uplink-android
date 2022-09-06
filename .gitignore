@@ -15,3 +15,4 @@
 local.properties
 target
 /release
+/keystore.jks
