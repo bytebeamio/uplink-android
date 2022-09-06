@@ -30,6 +30,7 @@ jobs:
         uses: timheuer/base64-to-file@v1.1
         with:
           fileName: keystore.jks
+          fileDir: .
           encodedString: ${{ secrets.KEYSTORE_JKS }}
 
       - name: Save local.properties
@@ -38,20 +39,15 @@ jobs:
           fileName: local.properties
           fileDir: .
           encodedString: ${{ secrets.LOCAL_PROPERTIES }}
-      - name: Print local.properties
-        id: vars1
-        run: echo ::set-output name=version::$(cat local.properties)
+
       - name: Print local.properties 2
         id: vars2
         run: echo $(cat local.properties)
-      - name: Print local.properties 3
-        id: vars3
-        run: echo ${{ secrets.LOCAL_PROPERTIES }}
 
-#      - name: rust-toolchain
-#        uses: actions-rs/toolchain@v1.0.6
-#
-#      - name: Grant execute permission for gradlew
-#        run: chmod +x gradlew
+      - name: rust-toolchain
+        uses: actions-rs/toolchain@v1.0.6
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 #      - name: Build with Gradle
 #        run: ./gradlew build
