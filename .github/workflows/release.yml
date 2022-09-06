@@ -24,7 +24,7 @@ jobs:
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1.0.6
         with:
-          ndk-version: 25.0.8775105
+          ndk-version: r25a
 
       - name: Save keystore.jks
         uses: timheuer/base64-to-file@v1.1
