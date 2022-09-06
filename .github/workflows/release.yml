@@ -11,20 +11,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-#      - name: set up JDK 11
-#        uses: actions/setup-java@v3
-#        with:
-#          java-version: '11'
-#          distribution: 'temurin'
-#          cache: gradle
-#
-#      - name: Setup Android SDK
-#        uses: android-actions/setup-android@v2
-#
-#      - name: Setup Android NDK
-#        uses: nttld/setup-ndk@v1.0.6
-#        with:
-#          ndk-version: 25.0.8775105
+      - name: set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1.0.6
+        with:
+          ndk-version: 25.0.8775105
 
       - name: Save keystore.jks
         uses: timheuer/base64-to-file@v1.1
@@ -39,10 +39,6 @@ jobs:
           fileName: local.properties
           fileDir: .
           encodedString: ${{ secrets.LOCAL_PROPERTIES }}
-
-      - name: Print local.properties 2
-        id: vars2
-        run: echo $(cat local.properties)
 
       - name: rust-toolchain
         uses: actions-rs/toolchain@v1.0.6
