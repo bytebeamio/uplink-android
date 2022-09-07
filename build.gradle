@@ -47,7 +47,7 @@ task buildArtifacts {
     dependsOn "lib:assembleRelease"
 
     doLast {
-        File stage = new File("${System.getenv("HOME")}/stage/uplink")
+        File stage = new File(project.rootProject.rootDir.toPath().resolve("build").resolve("release").toString())
         stage.mkdirs()
         for (File file in stage.listFiles()) {
             file.delete()
