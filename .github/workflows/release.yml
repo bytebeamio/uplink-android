@@ -41,7 +41,7 @@ jobs:
           encodedString: ${{ secrets.LOCAL_PROPERTIES }}
 
       - name: rust-toolchain
-        uses: actions-rs/toolchain@v1.0.6
+        run: rustup show
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
