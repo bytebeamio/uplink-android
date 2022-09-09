@@ -3,25 +3,19 @@ package io.bytebeam.UplinkDemo
 import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.TextView
-import android.widget.Toast
-import io.bytebeam.uplink.common.exceptions.ConfiguratorNotInstalledException
-import io.bytebeam.uplink.trash.Uplink
-import io.bytebeam.uplink.trash.UplinkStateCallback
-import io.bytebeam.uplink.trash.UplinkServiceState
+import io.bytebeam.uplink.ConnectionConfig
+import io.bytebeam.uplink.Uplink
 import io.bytebeam.uplink.common.ActionSubscriber
 import io.bytebeam.uplink.common.ActionResponse
 import io.bytebeam.uplink.common.UplinkAction
 import io.bytebeam.uplink.common.UplinkPayload
-import io.bytebeam.uplink.common.exceptions.UplinkServiceNotRunningException
 import org.json.JSONObject
+import java.io.IOException
 import java.util.concurrent.Executors
 
-class UplinkActivity : AppCompatActivity(), UplinkStateCallback,
-    ActionSubscriber {
+class UplinkActivity : AppCompatActivity(), ActionSubscriber {
     val logs = ArrayDeque<String>()
     lateinit var logView: TextView
 
@@ -33,19 +27,35 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback,
         logView = findViewById(R.id.logView)
 
         if (uplink == null) {
-            initUplink()
-        }
-    }
-
-    private fun initUplink() {
-        log("connecting to uplink service")
-        try {
-            uplink = Uplink(this, this)
-        } catch (e: ConfiguratorNotInstalledException) {
-            Toast.makeText(this, "configurator app is not installed on this device", Toast.LENGTH_LONG).show()
-        } catch (e: UplinkServiceNotRunningException) {
-            log("service not running")
-            Handler(Looper.getMainLooper()).postDelayed(this::initUplink, 1000)
+            uplink = Uplink(
+                ConnectionConfig()
+                    .withHost("10.0.2.2")
+                    .withPort(5555)
+            ).also {
+                it.subscribe(this)
+            }
+            Executors.newSingleThreadExecutor().execute {
+                var idx = 1
+                log(uplink.toString())
+                log(uplink?.connected().toString())
+                // This loop will run as long as uplink client is connected
+                while (uplink?.connected() == true) {
+                    val service = getSystemService(BATTERY_SERVICE) as BatteryManager
+                    uplink?.sendData(
+                        UplinkPayload(
+                            "test",
+                            idx++,
+                            System.currentTimeMillis(),
+                            JSONObject().apply {
+                                put("add", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
+                                log("Sending battery data: $this")
+                            }
+                        )
+                    )
+                    Thread.sleep(1000)
+                }
+                log("stopping battery status thread")
+            }
         }
     }
 
@@ -54,42 +64,10 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback,
         super.onDestroy()
     }
 
-    override fun onUplinkReady() {
-        uplink?.subscribe(this)
-        Executors.newSingleThreadExecutor().execute {
-            var idx = 1
-            // This loop will run as long as uplink client is connected
-            while (uplink?.state == UplinkServiceState.CONNECTED) {
-                val service = getSystemService(BATTERY_SERVICE) as BatteryManager
-                uplink?.sendData(
-                    UplinkPayload(
-                        "test",
-                        idx++,
-                        System.currentTimeMillis(),
-                        JSONObject().apply {
-                            put("add", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
-                            log("Sending battery data: $this")
-                        }
-                    )
-                )
-                Thread.sleep(1000)
-            }
-
-            log("uplink client disconnected")
-            // If the service goes down (configuration change), wait for a while and try to reconnect
-            Thread.sleep(5000)
-            initUplink()
-        }
-    }
-
     override fun processAction(action: UplinkAction) {
         log("Received action: $action")
         Executors.newSingleThreadExecutor().execute {
             for (i in 1..10) {
-                while (uplink?.state != UplinkServiceState.CONNECTED) {
-                    log("processAction: waiting for service to become available")
-                    Thread.sleep(1000)
-                }
                 log("sending response: $i")
                 uplink?.respondToAction(
                     ActionResponse(
@@ -105,13 +83,13 @@ class UplinkActivity : AppCompatActivity(), UplinkStateCallback,
                         arrayOf()
                     )
                 )
-                Thread.sleep(1000)
+                Thread.sleep(100)
             }
         }
     }
 
     private fun log(line: String) {
-        Log.d(TAG, line)
+        Log.d("UPLINK_EXAMPLE", line)
         runOnUiThread {
             logs.addFirst(line)
             if (logs.size > 250) {

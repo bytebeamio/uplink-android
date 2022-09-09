@@ -7,12 +7,8 @@ import io.bytebeam.uplink.common.ActionResponse;
 import io.bytebeam.uplink.common.ActionSubscriber;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,19 +16,20 @@ import java.util.List;
 public class Uplink {
     private static final Gson gson = new Gson();
     public static final String TAG = "UPLINK_SDK";
-    private final Socket client;
-    private final PrintWriter out;
+    private UplinkConnectionState state = UplinkConnectionState.UNINITIALIZED;
+    private Socket client;
+    private PrintWriter out;
     private final List<ActionSubscriber> subscribers = new ArrayList<>();
 
     /**
      * @param config
-     * @throws IOException if an error occurs when establishing connections
      */
-    public Uplink(ConnectionConfig config) throws IOException {
-        this.client = new Socket(config.host, config.port);
-        out = new PrintWriter(client.getOutputStream(), false);
-        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        new Thread(() -> readerTask(in)).start();
+    public Uplink(ConnectionConfig config) {
+        Thread init = new Thread(() -> initTask(config));
+        init.start();
+        try {
+            init.join();
+        } catch (InterruptedException e) {}
     }
 
     public void subscribe(ActionSubscriber subscriber) {
@@ -53,11 +50,35 @@ public class Uplink {
         sendData(response.toPayload());
     }
 
+    public boolean connected() {
+        return state == UplinkConnectionState.CONNECTED;
+    }
+
+    public void dispose() {
+        state = UplinkConnectionState.CLOSED;
+        try {
+            client.close();
+        } catch (IOException e) {}
+    }
+
+    private void initTask(ConnectionConfig config) {
+        try {
+            client = new Socket(config.host, config.port);
+            out = new PrintWriter(client.getOutputStream(), false);
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            new Thread(() -> readerTask(in)).start();
+            state = UplinkConnectionState.CONNECTED;
+        } catch (IOException e) {
+            state = UplinkConnectionState.DISCONNECTED;
+        }
+    }
+
     private void readerTask(BufferedReader in) {
-        while (true) {
+        while (connected()) {
             String line;
             try {
                 line = in.readLine();
+                Log.e(TAG, line);
             } catch (IOException e) {
                 break;
             }
@@ -72,5 +93,12 @@ public class Uplink {
                 Log.e(TAG, String.format("received invalid json from uplink: \"%s\"", line));
             }
         }
+    }
+
+    public enum UplinkConnectionState {
+        UNINITIALIZED,
+        CONNECTED,
+        CLOSED,
+        DISCONNECTED
     }
 }
