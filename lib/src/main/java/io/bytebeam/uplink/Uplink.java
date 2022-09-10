@@ -17,7 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Communicates with a running uplink instance using TCP JSON protocol specified in
  * <a href="https://github.com/bmcpt/uplink/blob/main/docs/apps.md">uplink docs</a>
- * Creating an instance of this class will connect to uplink.
+ * Creating an instance of this class will connect to uplink. `dispose` method must
+ * be called when you're done using it.
+ * Uplink instances are Thread-safe, so you can reuse them freely across multiple threads.
  */
 public class Uplink {
     private static final Gson gson = new Gson();
@@ -28,7 +30,6 @@ public class Uplink {
     private final List<ActionSubscriber> subscribers = new ArrayList<>();
 
     /**
-     *
      * @param address The host+port at which uplink is listening for connections
      * @throws IOException will be thrown if the client was unable to connect (uplink not running/already connected to someone else)
      */

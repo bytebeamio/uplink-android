@@ -19,31 +19,31 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
     val logs = ArrayDeque<String>()
     lateinit var logView: TextView
 
-    var uplink: Uplink? = null;
+    lateinit var uplink: Uplink;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_uplink)
 
         logView = findViewById(R.id.logView)
 
-        if (uplink == null) {
-            try {
-                uplink = Uplink(
-                    ConnectionConfig()
-                        .withHost("10.0.2.2")
-                        .withPort(5555)
-                ).also {
-                    it.subscribe(this)
-                }
-            } catch (e: IOException) {
-                log("uplink refused to connect")
-                return
+        try {
+            uplink = Uplink(
+                ConnectionConfig()
+                    .withHost("10.0.2.2")
+                    .withPort(5555)
+            ).also {
+                it.subscribe(this)
             }
-            Executors.newSingleThreadExecutor().execute {
-                var idx = 1
-                while (uplink?.connected() == true) {
-                    val service = getSystemService(BATTERY_SERVICE) as BatteryManager
-                    uplink?.sendData(
+        } catch (e: IOException) {
+            log("uplink refused to connect")
+            return
+        }
+        Executors.newSingleThreadExecutor().execute {
+            var idx = 1
+            while (uplink.connected()) {
+                val service = getSystemService(BATTERY_SERVICE) as BatteryManager
+                try {
+                    uplink.sendData(
                         UplinkPayload(
                             "test",
                             idx++,
@@ -54,15 +54,17 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                             }
                         )
                     )
-                    Thread.sleep(5000)
+                } catch (e: IOException) {
+                    log("connection closed, stopping battery status thread")
+                    break
                 }
-                log("stopping battery status thread")
+                Thread.sleep(5000)
             }
         }
     }
 
     override fun onDestroy() {
-        uplink?.dispose()
+        uplink.dispose()
         super.onDestroy()
     }
 
@@ -71,20 +73,25 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         Executors.newSingleThreadExecutor().execute {
             for (i in 1..10) {
                 log("sending response: $i")
-                uplink?.respondToAction(
-                    ActionResponse(
-                        action.id,
-                        i,
-                        System.currentTimeMillis(),
-                        if (i != 10) {
-                            "Running"
-                        } else {
-                            "Completed"
-                        },
-                        i * 10,
-                        arrayOf()
+                try {
+                    uplink.respondToAction(
+                        ActionResponse(
+                            action.id,
+                            i,
+                            System.currentTimeMillis(),
+                            if (i != 10) {
+                                "Running"
+                            } else {
+                                "Completed"
+                            },
+                            i * 10,
+                            arrayOf()
+                        )
                     )
-                )
+                } catch (e: IOException) {
+                    log("connection closed, aborting action responses")
+                    break
+                }
                 Thread.sleep(100)
             }
         }
