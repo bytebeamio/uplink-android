@@ -27,18 +27,20 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         logView = findViewById(R.id.logView)
 
         if (uplink == null) {
-            uplink = Uplink(
-                ConnectionConfig()
-                    .withHost("10.0.2.2")
-                    .withPort(5555)
-            ).also {
-                it.subscribe(this)
+            try {
+                uplink = Uplink(
+                    ConnectionConfig()
+                        .withHost("10.0.2.2")
+                        .withPort(5555)
+                ).also {
+                    it.subscribe(this)
+                }
+            } catch (e: IOException) {
+                log("uplink refused to connect")
+                return
             }
             Executors.newSingleThreadExecutor().execute {
                 var idx = 1
-                log(uplink.toString())
-                log(uplink?.connected().toString())
-                // This loop will run as long as uplink client is connected
                 while (uplink?.connected() == true) {
                     val service = getSystemService(BATTERY_SERVICE) as BatteryManager
                     uplink?.sendData(
@@ -52,7 +54,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                             }
                         )
                     )
-                    Thread.sleep(1000)
+                    Thread.sleep(5000)
                 }
                 log("stopping battery status thread")
             }

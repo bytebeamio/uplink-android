@@ -12,50 +12,82 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Communicates with a running uplink instance using TCP JSON protocol specified in
+ * <a href="https://github.com/bmcpt/uplink/blob/main/docs/apps.md">uplink docs</a>
+ * Creating an instance of this class will connect to uplink.
+ */
 public class Uplink {
     private static final Gson gson = new Gson();
     public static final String TAG = "UPLINK_SDK";
-    private UplinkConnectionState state = UplinkConnectionState.UNINITIALIZED;
+    private final AtomicReference<UplinkConnectionState> state = new AtomicReference<>(UplinkConnectionState.UNINITIALIZED);
     private Socket client;
     private PrintWriter out;
     private final List<ActionSubscriber> subscribers = new ArrayList<>();
 
     /**
-     * @param config
+     *
+     * @param address The host+port at which uplink is listening for connections
+     * @throws IOException will be thrown if the client was unable to connect (uplink not running/already connected to someone else)
      */
-    public Uplink(ConnectionConfig config) {
-        Thread init = new Thread(() -> initTask(config));
+    public Uplink(ConnectionConfig address) throws IOException {
+        Thread init = new Thread(() -> initTask(address));
         init.start();
         try {
             init.join();
         } catch (InterruptedException e) {}
+        if (state.get() == UplinkConnectionState.DISCONNECTED) {
+            throw new IOException("uplink refused to connect");
+        }
     }
 
+    /**
+     * Add a listener for incoming actions
+     */
     public void subscribe(ActionSubscriber subscriber) {
         synchronized (subscribers) {
             subscribers.add(subscriber);
         }
     }
 
-    public void sendData(UplinkPayload payload) {
+    /**
+     * Send some data to uplink. Will throw an IOException if the client is not connected to
+     * the uplink instance anymore
+     */
+    public void sendData(UplinkPayload payload) throws IOException {
         synchronized (out) {
+            if (!connected()) {
+                throw new IOException(String.format("not connected anymore, state = %s", state.get()));
+            }
             out.write(payload.toJson());
             out.write('\n');
             out.flush();
         }
     }
 
-    public void respondToAction(ActionResponse response) {
+    /**
+     * Respond to an action. Will throw an IOException if the client is not connected to
+     * the uplink instance anymore
+     */
+    public void respondToAction(ActionResponse response) throws IOException {
         sendData(response.toPayload());
     }
 
+    /**
+     * Checks whether the client in still connected
+     */
     public boolean connected() {
-        return state == UplinkConnectionState.CONNECTED;
+        return state.get() == UplinkConnectionState.CONNECTED;
     }
 
+    /**
+     * Should be called when the user is done communicating with uplink
+     * (e.g. in the `onDestroy` method of an activity).
+     */
     public void dispose() {
-        state = UplinkConnectionState.CLOSED;
+        state.set(UplinkConnectionState.CLOSED);
         try {
             client.close();
         } catch (IOException e) {}
@@ -67,9 +99,9 @@ public class Uplink {
             out = new PrintWriter(client.getOutputStream(), false);
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             new Thread(() -> readerTask(in)).start();
-            state = UplinkConnectionState.CONNECTED;
+            state.set(UplinkConnectionState.CONNECTED);
         } catch (IOException e) {
-            state = UplinkConnectionState.DISCONNECTED;
+            state.set(UplinkConnectionState.DISCONNECTED);
         }
     }
 
@@ -78,6 +110,10 @@ public class Uplink {
             String line;
             try {
                 line = in.readLine();
+                if (line == null) {
+                    state.set(UplinkConnectionState.DISCONNECTED);
+                    break;
+                }
                 Log.e(TAG, line);
             } catch (IOException e) {
                 break;

@@ -1,5 +1,8 @@
 package io.bytebeam.uplink;
 
+/**
+ * Address at which uplink is listening for TCP connections
+ */
 public class ConnectionConfig {
     String host = "localhost";
     int port = 5555;
