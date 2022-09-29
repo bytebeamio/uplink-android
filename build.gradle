@@ -36,11 +36,53 @@ task clean(type: Delete) {
     }
 }
 
+def archs = [
+        "x86_64-linux-android",
+        "i686-linux-android",
+        "aarch64-linux-android",
+        "armv7-linux-androideabi"
+]
+
+archs.forEach { arch ->
+    task("build-$arch") {
+        description "build exe for $arch"
+        doLast {
+            def pb = new ProcessBuilder()
+                    .command(
+                            "cargo",
+                            "ndk",
+                            "--platform",
+                            "23",
+                            "--target",
+                            arch,
+                            "build",
+                            "--release",
+                            "--bin",
+                            "uplink"
+                    )
+                    .directory(new File("../uplink"))
+
+            def env = pb.environment()
+            env.put("ANDROID_NDK_HOME", "${env.get("HOME")}/Android/Sdk/ndk/25.0.8775105".toString())
+
+            def process = pb.start()
+            println(new String(process.inputStream.readAllBytes()))
+            println(new String(process.errorStream.readAllBytes()))
+
+            assert (process.waitFor() == 0)
+        }
+    }
+}
+
 task buildArtifacts {
     description "build all artifacts and move them to a directory for uploading"
 
     dependsOn "example:assembleRelease"
     dependsOn "lib:assembleRelease"
+
+    archs.forEach { arch ->
+        dependsOn ":build-$arch"
+    }
 
     doLast {
         File stage = new File(project.rootProject.rootDir.toPath().resolve("build").resolve("release").toString())
@@ -52,5 +94,12 @@ task buildArtifacts {
         String lib = project.rootProject.rootDir.path + "/lib/build/outputs/aar/uplink-release.aar"
         Files.copy(Paths.get(example), Paths.get(stage.path, "example_${sdk_version}.apk"))
         Files.copy(Paths.get(lib), Paths.get(stage.path, "uplink_${sdk_version}.aar"))
+
+        archs.forEach { arch ->
+            Files.copy(
+                    Paths.get("../uplink/target/$arch/release/uplink"),
+                    Paths.get(stage.path, arch)
+            )
+        }
     }
 }
