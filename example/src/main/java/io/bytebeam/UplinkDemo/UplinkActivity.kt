@@ -76,7 +76,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                 try {
                     uplink.respondToAction(
                         ActionResponse(
-                            action.id,
+                            action.action_id,
                             i,
                             System.currentTimeMillis(),
                             if (i != 10) {
