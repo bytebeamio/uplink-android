@@ -24,7 +24,7 @@ public class ActionResponse {
     public UplinkPayload toPayload() {
         JSONObject payload = new JSONObject();
         try {
-            payload.put("id", id);
+            payload.put("action_id", id);
             payload.put("state", state);
             payload.put("progress", progress);
             JSONArray errorsJson = new JSONArray();
