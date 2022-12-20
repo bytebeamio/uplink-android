@@ -30,10 +30,9 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
             uplink = Uplink(
                 ConnectionConfig()
                     .withHost("10.0.2.2")
-                    .withPort(5555)
-            ).also {
-                it.subscribe(this)
-            }
+                    .withPort(5555),
+                this
+            )
         } catch (e: IOException) {
             log("uplink refused to connect")
             return

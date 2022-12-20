@@ -1,6 +1,5 @@
 package io.bytebeam.uplink.common;
 
-import android.os.Parcel;
 import android.util.Log;
 import lombok.Value;
 import org.json.JSONException;

@@ -33,7 +33,8 @@ public class Uplink {
      * @param address The host+port at which uplink is listening for connections
      * @throws IOException will be thrown if the client was unable to connect (uplink not running/already connected to someone else)
      */
-    public Uplink(ConnectionConfig address) throws IOException {
+    public Uplink(ConnectionConfig address, ActionSubscriber actionSubscriber) throws IOException {
+        subscribers.add(actionSubscriber);
         Thread init = new Thread(() -> initTask(address));
         init.start();
         try {
@@ -115,8 +116,9 @@ public class Uplink {
                     state.set(UplinkConnectionState.DISCONNECTED);
                     break;
                 }
-                Log.e(TAG, line);
             } catch (IOException e) {
+                Log.e(TAG, "error when reading action", e);
+                state.set(UplinkConnectionState.DISCONNECTED);
                 break;
             }
             try {
