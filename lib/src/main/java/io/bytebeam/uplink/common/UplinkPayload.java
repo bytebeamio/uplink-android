@@ -1,11 +1,8 @@
 package io.bytebeam.uplink.common;
 
-import android.util.Log;
 import lombok.Value;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import static io.bytebeam.uplink.Uplink.TAG;
 
 @Value
 public class UplinkPayload {
@@ -22,7 +19,6 @@ public class UplinkPayload {
             result.put("timestamp", timestamp);
             return result.toString();
         } catch (JSONException e) {
-            Log.e(TAG, String.format("unexpected error: %s", e));
             return "{}";
         }
     }

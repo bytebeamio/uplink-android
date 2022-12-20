@@ -29,8 +29,8 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         try {
             uplink = Uplink(
                 ConnectionConfig()
-                    .withHost("10.0.2.2")
-                    .withPort(5555),
+                    .withHost("192.168.1.6")
+                    .withPort(5556),
                 this
             )
         } catch (e: IOException) {
@@ -39,17 +39,19 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         }
         Executors.newSingleThreadExecutor().execute {
             var idx = 1
+            var count = 0
+            var last = System.currentTimeMillis()
             while (uplink.connected()) {
-                val service = getSystemService(BATTERY_SERVICE) as BatteryManager
                 try {
                     uplink.sendData(
                         UplinkPayload(
-                            "test",
+                            "device_shadow",
                             idx++,
                             System.currentTimeMillis(),
                             JSONObject().apply {
-                                put("add", service.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY))
-                                log("Sending battery data: $this")
+                                put("a", true)
+                                put("b", true)
+                                put("c", true)
                             }
                         )
                     )
@@ -57,7 +59,13 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                     log("connection closed, stopping battery status thread")
                     break
                 }
-                Thread.sleep(5000)
+                val now = System.currentTimeMillis()
+                count++
+                if (now - last > 1000) {
+                    log("$idx: $count messages/s")
+                    last = now
+                    count = 0
+                }
             }
         }
     }
