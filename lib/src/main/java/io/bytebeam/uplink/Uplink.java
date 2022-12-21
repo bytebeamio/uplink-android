@@ -1,6 +1,5 @@
 package io.bytebeam.uplink;
 
-import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.bytebeam.uplink.common.ActionResponse;
@@ -23,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class Uplink {
     private static final Gson gson = new Gson();
-    public static final String TAG = "UPLINK_SDK";
     private final AtomicReference<UplinkConnectionState> state = new AtomicReference<>(UplinkConnectionState.UNINITIALIZED);
     private Socket client;
     private PrintWriter out;
@@ -117,7 +115,6 @@ public class Uplink {
                     break;
                 }
             } catch (IOException e) {
-                Log.e(TAG, "error when reading action", e);
                 state.set(UplinkConnectionState.DISCONNECTED);
                 break;
             }
@@ -129,7 +126,7 @@ public class Uplink {
                     }
                 }
             } catch (JsonSyntaxException e) {
-                Log.e(TAG, String.format("received invalid json from uplink: \"%s\"", line));
+                System.out.printf("received invalid json from uplink: \"%s\"\n", line);
             }
         }
     }

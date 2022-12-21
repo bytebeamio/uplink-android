@@ -1,6 +1,5 @@
 package io.bytebeam.UplinkDemo
 
-import android.os.BatteryManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -30,7 +29,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
             uplink = Uplink(
                 ConnectionConfig()
                     .withHost("192.168.1.6")
-                    .withPort(5556),
+                    .withPort(5555),
                 this
             )
         } catch (e: IOException) {
