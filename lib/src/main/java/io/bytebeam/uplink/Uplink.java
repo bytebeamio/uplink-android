@@ -1,11 +1,11 @@
 package io.bytebeam.uplink;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import io.bytebeam.uplink.common.ActionResponse;
 import io.bytebeam.uplink.common.ActionSubscriber;
 import io.bytebeam.uplink.common.UplinkAction;
 import io.bytebeam.uplink.common.UplinkPayload;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.net.Socket;
@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Uplink instances are Thread-safe, so you can reuse them freely across multiple threads.
  */
 public class Uplink {
-    private static final Gson gson = new Gson();
     private final AtomicReference<UplinkConnectionState> state = new AtomicReference<>(UplinkConnectionState.UNINITIALIZED);
     private Socket client;
     private PrintWriter out;
@@ -37,7 +36,8 @@ public class Uplink {
         init.start();
         try {
             init.join();
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
         if (state.get() == UplinkConnectionState.DISCONNECTED) {
             throw new IOException("uplink refused to connect");
         }
@@ -90,7 +90,8 @@ public class Uplink {
         state.set(UplinkConnectionState.CLOSED);
         try {
             client.close();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+        }
     }
 
     private void initTask(ConnectionConfig config) {
@@ -119,13 +120,19 @@ public class Uplink {
                 break;
             }
             try {
-                UplinkAction action = gson.fromJson(line, UplinkAction.class);
+                JSONObject o = new JSONObject(line);
+                UplinkAction action = new UplinkAction(
+                        o.getString("action_id"),
+                        o.getString("kind"),
+                        o.getString("name"),
+                        o.getString("payload")
+                );
                 synchronized (subscribers) {
                     for (ActionSubscriber subscriber : subscribers) {
                         subscriber.processAction(action);
                     }
                 }
-            } catch (JsonSyntaxException e) {
+            } catch (JSONException e) {
                 System.out.printf("received invalid json from uplink: \"%s\"\n", line);
             }
         }
