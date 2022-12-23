@@ -31,7 +31,9 @@ public class Uplink {
      * @throws IOException will be thrown if the client was unable to connect (uplink not running/already connected to someone else)
      */
     public Uplink(ConnectionConfig address, ActionSubscriber actionSubscriber) throws IOException {
-        subscribers.add(actionSubscriber);
+        if (actionSubscriber != null) {
+            subscribers.add(actionSubscriber);
+        }
         Thread init = new Thread(() -> initTask(address));
         init.start();
         try {
