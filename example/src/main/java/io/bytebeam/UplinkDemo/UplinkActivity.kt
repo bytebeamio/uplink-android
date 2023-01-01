@@ -28,8 +28,8 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         try {
             uplink = Uplink(
                 ConnectionConfig()
-                    .withHost("192.168.1.6")
-                    .withPort(5555),
+                    .withHost("127.0.0.1")
+                    .withPort(12110),
                 this
             )
         } catch (e: IOException) {
@@ -44,13 +44,13 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                 try {
                     uplink.sendData(
                         UplinkPayload(
-                            "device_shadow",
+                            "C2C_CAN",
                             idx++,
                             System.currentTimeMillis(),
                             JSONObject().apply {
-                                put("a", true)
-                                put("b", true)
-                                put("c", true)
+                                put("can_id", 204)
+                                put("byte1", 0)
+                                put("byte2", 1)
                             }
                         )
                     )
@@ -65,6 +65,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                     last = now
                     count = 0
                 }
+                Thread.sleep(1)
             }
         }
     }
