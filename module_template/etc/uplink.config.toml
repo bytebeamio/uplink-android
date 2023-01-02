@@ -2,6 +2,8 @@ bridge_port = 8031
 
 [persistence]
 path = "/data/local/uplink/persistence"
+max_file_size = 104857600
+max_file_count = 3
 
 [ota]
 enabled = true
