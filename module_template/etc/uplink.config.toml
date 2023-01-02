@@ -1,0 +1,14 @@
+bridge_port = 8031
+
+[persistence]
+path = "/data/local/uplink/persistence"
+
+[ota]
+enabled = true
+path = "/data/local/uplink/ota"
+
+[stats]
+enabled = false
+process_names = ["uplink"]
+update_period = 5
+stream_size = 1
