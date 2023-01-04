@@ -1,5 +1,6 @@
 package io.bytebeam.uplink;
 
+import android.util.Log;
 import io.bytebeam.uplink.common.ActionResponse;
 import io.bytebeam.uplink.common.ActionSubscriber;
 import io.bytebeam.uplink.common.UplinkAction;
@@ -104,6 +105,7 @@ public class Uplink {
             new Thread(() -> readerTask(in)).start();
             state.set(UplinkConnectionState.CONNECTED);
         } catch (IOException e) {
+            Log.e("UplinkAndroid", "Failed to connect: ", e);
             state.set(UplinkConnectionState.DISCONNECTED);
         }
     }
@@ -114,10 +116,12 @@ public class Uplink {
             try {
                 line = in.readLine();
                 if (line == null) {
+                    Log.e("UplinkAndroid", "connection closed by uplink");
                     state.set(UplinkConnectionState.DISCONNECTED);
                     break;
                 }
             } catch (IOException e) {
+                Log.e("UplinkAndroid", "Disconnected: ", e);
                 state.set(UplinkConnectionState.DISCONNECTED);
                 break;
             }
