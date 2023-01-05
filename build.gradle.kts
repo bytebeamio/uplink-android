@@ -116,7 +116,7 @@ archs.forEach { arch ->
     }
 
     task("copy-utilities-$arch", type = Copy::class) {
-        arrayOf("logrotate", "uplink_watchdog", "daemonize").forEach { utility ->
+        arrayOf("logrotate", "uplink_watchdog").forEach { utility ->
             from(root.resolve(root.resolve(Paths.get("utilities", "target", arch, "release", utility))))
         }
         into(stage.resolve(arch).resolve("bin"))
