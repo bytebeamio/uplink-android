@@ -21,8 +21,8 @@ fn uplink_running() -> bool {
 fn uplink_mode() -> Option<String> {
     let logs = format!(
         "{}\n{}",
-        std::fs::read_to_string(("/data/local/uplink/out.log.1")).unwrap_or(String::new()),
-        std::fs::read_to_string(("/data/local/uplink/out.log")).unwrap_or(String::new())
+        std::fs::read_to_string("/data/local/uplink/out.log.1").unwrap_or(String::new()),
+        std::fs::read_to_string("/data/local/uplink/out.log").unwrap_or(String::new())
     );
     for line in logs.lines().rev() {
         if let Some(mode) = UPLINK_MODE_REGEX.captures(line)
@@ -83,17 +83,11 @@ fn main() {
         let ev_time = 5 * 60;
         if tics % ev_time == ev_time / 2 {
             if internet_working() {
-                let curr_mode = uplink_mode();
-                match curr_mode {
-                    None => {
-                        println!("mode not found");
-                    }
-                    Some(mode) => {
-                        println!("mode is {mode}");
-                        if mode == "slow eventloop".to_string()  {
-                            println!("{now}: uplink stuck in slow eventloop mode, restarting");
-                            restart();
-                        }
+                if let Some(mode) = uplink_mode() {
+                    println!("mode is {mode}");
+                    if mode == "slow eventloop".to_string()  {
+                        println!("{now}: uplink stuck in slow eventloop mode, restarting");
+                        restart();
                     }
                 }
             }
