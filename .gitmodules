@@ -1,0 +1,3 @@
+[submodule "uplink"]
+	path = uplink
+	url = https://github.com/bytebeamio/uplink
