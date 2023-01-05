@@ -1,6 +1,5 @@
-use std::time::SystemTime;
-use chrono::{DateTime, Utc};
 use clap::{arg, Parser};
+use time::{OffsetDateTime, UtcOffset};
 use utilities::LazyFile;
 
 #[derive(Parser, Debug)]
@@ -29,7 +28,8 @@ fn main() {
         if !output_file.exists() {
             output_file.create();
             output_file.append_line(
-                DateTime::<Utc>::from(SystemTime::now()).format("%d/%m/%Y %T").to_string().as_str()
+                OffsetDateTime::now_utc().to_offset(UtcOffset::from_hms(5, 30, 0).unwrap())
+                    .to_string().as_str()
             );
         }
         if line.is_err() {

@@ -1,19 +1,14 @@
-use std::alloc::System;
-use std::cmp::PartialEq;
 use std::fs::File;
 use std::io::{BufRead, Write};
 use std::process::Command;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime};
-use regex::{Captures, Regex};
-use time::{OffsetDateTime, PrimitiveDateTime, Time};
+use std::time::Duration;
+use regex::Regex;
+use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
-const TOMORROW_3AM: PrimitiveDateTime = OffsetDateTime::now_utc().date()
-    .next_day().unwrap()
-    .with_hms(22, 15, 0)
-    .unwrap();
-
-const UPLINK_MODE_REGEX: Regex = Regex::new("^.+Switching to (.+) mode!!$").unwrap();
+lazy_static::lazy_static! {
+    static ref UPLINK_MODE_REGEX: Regex = Regex::new("^.+Switching to (.+) mode!!$").unwrap();
+}
 
 fn uplink_running() -> bool {
     let output = Command::new("pgrep")
@@ -26,7 +21,8 @@ fn uplink_running() -> bool {
 
 fn uplink_mode() -> Option<String> {
     let file = File::open("/var/log/uplink.log").unwrap();
-    for line in std::io::BufReader::new(file).lines().rev() {
+    // TODO: iterate without collect
+    for line in std::io::BufReader::new(file).lines().collect::<Vec<_>>().iter().rev() {
         match line {
             Err(_) => break,
             Ok(line) => {
@@ -52,19 +48,25 @@ fn internet_working() -> bool {
 }
 
 fn main() {
+    let tomorrow_3am: PrimitiveDateTime = OffsetDateTime::now_utc()
+        .date()
+        .next_day().unwrap()
+        .with_hms(22, 15, 0)
+        .unwrap();
+
     let current_exe_path = std::env::current_exe().unwrap();
     let uplink_module_dir = current_exe_path
         .parent()
         .and_then(|d| d.parent())
         .unwrap_or_else(|| panic!("uplink module not installed properly"));
     let restart = || {
-        Command::new(format!(uplink_module_dir.join("bin").join("daemonize")))
+        Command::new(uplink_module_dir.join("bin").join("daemonize"))
             .arg(uplink_module_dir.join("service.sh"))
             .output()
             .unwrap();
     };
 
-    println!("waiting till: {TOMORROW_3AM}");
+    println!("waiting till: {tomorrow_3am}");
     let mut tics = 0;
     loop {
         let _ = std::io::stdout().flush();
@@ -73,19 +75,19 @@ fn main() {
         tics += 1;
         let now = OffsetDateTime::now_utc();
 
-        if now > TOMORROW_3AM {
+        if now > tomorrow_3am.assume_offset(UtcOffset::UTC) {
             println!("{now}: restarting uplink");
             restart()
         } else if !uplink_running() {
             println!("{now}: uplink crashed, restarting");
-            restart
+            restart()
         }
 
         let ev_time = 5 * 60;
         if tics % ev_time == ev_time / 2 {
             if internet_working() {
                 let curr_mode = uplink_mode();
-                if curr_mode == "slow eventloop" {
+                if curr_mode == Some("slow eventloop".to_string()) {
                     println!("{now}: uplink stuck in slow eventloop mode, restarting");
                     restart();
                 }
