@@ -59,7 +59,7 @@ archs.forEach { arch ->
                     "--bin",
                     "uplink"
                 )
-                .directory(File("../uplink"))
+                .directory(File("uplink"))
             pb.environment().let {
                 it["ANDROID_NDK_HOME"] = "${it["HOME"]}/Android/Sdk/ndk/25.0.8775105"
             }
@@ -71,6 +71,7 @@ archs.forEach { arch ->
             assert(process.waitFor() == 0)
         }
     }
+
     tasks.create("build-utilities-$arch") {
         description = "build utilities for $arch"
         doLast {
@@ -97,22 +98,26 @@ archs.forEach { arch ->
             assert(process.waitFor() == 0)
         }
     }
+
     task("template-$arch", type = Copy::class) {
         description = "copy module template for $arch"
 
         from(root.resolve("module_template"))
         into(stage.resolve(arch))
     }
+
     task("copy-uplink-$arch", type = Copy::class) {
-        from(Paths.get("../uplink/target/$arch/release/uplink"))
+        from(Paths.get("uplink/target/$arch/release/uplink"))
         into(stage.resolve(arch).resolve("bin"))
     }
+
     task("copy-utilities-$arch", type = Copy::class) {
         arrayOf("logrotate").forEach { utility ->
             from(root.resolve(root.resolve(Paths.get("utilities", "target", arch, "release", utility))))
         }
         into(stage.resolve(arch).resolve("bin"))
     }
+
     task("module-dir-$arch") {
         description = "create module for $arch"
         dependsOn(
@@ -123,6 +128,7 @@ archs.forEach { arch ->
             "copy-utilities-$arch"
         )
     }
+
     task("module-$arch") {
         description = "module archive for $arch"
         dependsOn("module-dir-$arch")
