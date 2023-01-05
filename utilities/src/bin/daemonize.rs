@@ -1,4 +1,4 @@
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

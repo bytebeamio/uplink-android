@@ -68,7 +68,9 @@ archs.forEach { arch ->
             println(String(process.inputStream.readAllBytes()))
             println(String(process.errorStream.readAllBytes()))
 
-            assert(process.waitFor() == 0)
+            if (process.waitFor() != 0) {
+                throw Exception("cargo build failed")
+            }
         }
     }
 
@@ -95,7 +97,9 @@ archs.forEach { arch ->
             println(String(process.inputStream.readAllBytes()))
             println(String(process.errorStream.readAllBytes()))
 
-            assert(process.waitFor() == 0)
+            if (process.waitFor() != 0) {
+                throw Exception("cargo build failed")
+            }
         }
     }
 
@@ -167,4 +171,9 @@ tasks.create("buildArtifacts") {
         dependsOn("module-$arch")
     }
     dependsOn("copy-lib")
+}
+
+fun<T> trace(value: T) : T {
+    println(value)
+    return value
 }
