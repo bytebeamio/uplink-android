@@ -5,8 +5,8 @@ path = "/data/local/uplink/persistence"
 max_file_size = 104857600
 max_file_count = 3
 
-[ota]
-enabled = true
+[downloader]
+actions = ["update_firmware"]
 path = "/data/local/uplink/ota"
 
 [stats]
