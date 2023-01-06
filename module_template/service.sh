@@ -1,6 +1,6 @@
 #!/system/bin/sh
 
-MODULE_DIR=/data/local/uplinkmodule
+MODULE_DIR=$(dirname "$0")
 DATA_DIR=/data/local/uplink
 
 pkill -x uplink_watchdog
