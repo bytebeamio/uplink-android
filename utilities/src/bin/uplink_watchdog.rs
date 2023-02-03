@@ -84,7 +84,6 @@ fn main() {
         if tics % ev_time == ev_time / 2 {
             if internet_working() {
                 if let Some(mode) = uplink_mode() {
-                    println!("mode is {mode}");
                     if mode == "slow eventloop".to_string()  {
                         println!("{now}: uplink stuck in slow eventloop mode, restarting");
                         restart();

@@ -2,7 +2,7 @@ import java.nio.file.Paths
 
 buildscript {
     extra.apply {
-        set("sdk_version", "v0.5.2")
+        set("sdk_version", "v0.5.3")
         set("kotlin_version", "1.7.0")
     }
     repositories {
