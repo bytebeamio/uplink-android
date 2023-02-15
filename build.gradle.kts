@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.incremental.deleteRecursivelyOrThrow
 import java.nio.file.Paths
 
 buildscript {
@@ -152,6 +153,7 @@ archs.forEach { arch ->
             val process = pb.start()
             println(String(process.inputStream.readAllBytes()))
             println(String(process.errorStream.readAllBytes()))
+            stage.resolve(arch).toFile().deleteRecursivelyOrThrow()
 
             assert(process.waitFor() == 0)
         }
