@@ -10,8 +10,8 @@ actions = ["update_firmware"]
 path = "/data/local/uplink/ota"
 
 [stats]
-enabled = false
-process_names = ["uplink"]
+enabled = true
+process_names = ["io.bytebeam.android_web_wrapper"]
 update_period = 5
 stream_size = 1
 
