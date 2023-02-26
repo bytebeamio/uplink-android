@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.incremental.deleteRecursivelyOrThrow
 import java.nio.file.Paths
+import kotlin.io.path.copyTo
 
 buildscript {
     extra.apply {
@@ -153,9 +154,11 @@ archs.forEach { arch ->
             val process = pb.start()
             println(String(process.inputStream.readAllBytes()))
             println(String(process.errorStream.readAllBytes()))
-            stage.resolve(arch).toFile().deleteRecursivelyOrThrow()
+//            stage.resolve(arch).toFile().deleteRecursivelyOrThrow()
 
-            assert(process.waitFor() == 0)
+            if (process.waitFor() != 0) {
+                throw Exception("tar failed")
+            }
         }
     }
 }

@@ -14,3 +14,7 @@ enabled = false
 process_names = ["uplink"]
 update_period = 5
 stream_size = 1
+
+[logging]
+tags = ["*"]
+min_level = 6
