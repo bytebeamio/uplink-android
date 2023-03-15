@@ -1,22 +1,33 @@
 # Uplink Android SDK
 
-SDK for communicating with [uplink](https://github.com/bytebeamio/uplink) from android.
+SDK for setting up and communicating with [uplink](https://github.com/bytebeamio/uplink) from android.
 
-## Client SDK
+This project consists of two parts.
 
-The client sdk can be used by app developers to communicate with an uplink instance. It provides a type safe java api
-for the app developers.
+## Uplink android module
 
-#### API
+It's distributed as a tarball for the 4 major android architectures (arm/x86 X 32bit/64bit). This module is a valid
+magisk module so it can be just extracted to `/data/adb/modules/uplink` if you're using magisk as your root manager and
+it will start uplink at boot. You can also start uplink manually like this:
 
-The `io.bytebeam.uplink.Uplink` class (from the `lib` module) provides the client side api for this sdk. Please
-see the java docs and example app source code to understand how to use it.
-
-#### Generate `.aar`
-
-The client sdk can be exported as an aar package that can be easily loaded into an Android project by running the
-following command:
-
-```sh
-./gradlew :lib:build
 ```
+$MODULE/bin/daemonize $MODULE/service.sh
+```
+
+This script will stop the current uplink instance if it's running and then start it.
+
+The following are the configuration points for this module:
+
+* `$MODULE/etc/uplink.config.toml` : uplink configuration file
+* `$MODULE/services/` : If you want to run some additional services, put the boot script in this directory
+* `/data/local/uplink` : The data directory of uplink. You must create this directory as part of the provisioning of your device and put the uplink `device.json` inside it.
+
+## Android library
+
+It's distributed as an aar file on the github releases page. It can be included in you android project like this:
+
+```gradle
+    implementation files('libs/uplink.aar')
+```
+
+The main entry point of this library is the `io.bytebeam.uplink.Uplink` class. Look at the javadoc of this class for usage notes.

@@ -1,8 +1,10 @@
+import org.jetbrains.kotlin.incremental.deleteRecursivelyOrThrow
 import java.nio.file.Paths
+import kotlin.io.path.copyTo
 
 buildscript {
     extra.apply {
-        set("sdk_version", "v0.5.3")
+        set("sdk_version", "v0.6.0")
         set("kotlin_version", "1.7.0")
     }
     repositories {
@@ -152,8 +154,11 @@ archs.forEach { arch ->
             val process = pb.start()
             println(String(process.inputStream.readAllBytes()))
             println(String(process.errorStream.readAllBytes()))
+//            stage.resolve(arch).toFile().deleteRecursivelyOrThrow()
 
-            assert(process.waitFor() == 0)
+            if (process.waitFor() != 0) {
+                throw Exception("tar failed")
+            }
         }
     }
 }
