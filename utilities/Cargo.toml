@@ -10,3 +10,14 @@ clap = { version = "4.0.32", features = ["derive"] }
 time = "0.3.17"
 regex = "1.7.0"
 lazy_static = "1.4.0"
+
+[profile.dev]
+opt-level = 1
+debug = true
+strip = true
+panic = "unwind"
+
+[profile.release]
+opt-level = "s"
+strip = true
+panic = "unwind"
