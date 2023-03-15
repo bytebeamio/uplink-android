@@ -1,20 +1,38 @@
-bridge_port = 8031
+processes = []
+action_redirections = { "update_firmware" = "install_update" }
+
+[tcpapps.app]
+port = 8031
+actions = [{ name = "install_update", timeout = 60 }]
+
+[tcpapps.post_update]
+port = 8032
+actions = []
 
 [persistence]
 path = "/data/local/uplink/persistence"
-max_file_size = 104857600
-max_file_count = 3
+max_file_size = 100000
+max_file_count = 1000
 
 [downloader]
-actions = ["update_firmware"]
+actions = [{ name = "update_firmware" }]
 path = "/data/local/uplink/ota"
 
-[stats]
-enabled = true
-process_names = ["io.bytebeam.android_web_wrapper"]
-update_period = 5
-stream_size = 1
+[streams.device_shadow]
+topic = "/tenants/{tenant_id}/devices/{device_id}/events/device_shadow/jsonarray"
+buf_size = 1
+
+[streams.ota_log]
+topic = "/tenants/{tenant_id}/devices/{device_id}/events/ota_log/jsonarray"
+buf_size = 1
 
 [logging]
 tags = ["*"]
+stream_size = 1
 min_level = 6
+
+[system_stats]
+enabled = true
+process_names = ["uplink"]
+update_period = 5
+stream_size = 1
