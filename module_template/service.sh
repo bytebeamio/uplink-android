@@ -1,6 +1,8 @@
 #!/system/bin/sh
 
-MODULE_DIR=$(dirname "$0")
+set -x
+
+MODULE_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 DATA_DIR=/data/local/uplink
 export MODULE_DIR
 export DATA_DIR
