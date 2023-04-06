@@ -10,15 +10,15 @@ lazy_static::lazy_static! {
 }
 
 fn uplink_running() -> bool {
-    let output = Command::new("pgrep")
+    Command::new("pgrep")
         .arg("-x")
         .arg("uplink")
         .output()
-        .expect("failed to execute process");
-    return output.status.success();
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
-fn uplink_mode() -> Option<String> {
+fn _uplink_mode() -> Option<String> {
     let logs = format!(
         "{}\n{}",
         std::fs::read_to_string("/data/local/uplink/out.log.1").unwrap_or(String::new()),
@@ -33,7 +33,7 @@ fn uplink_mode() -> Option<String> {
     return None;
 }
 
-fn internet_working() -> bool {
+fn _internet_working() -> bool {
     let output = Command::new("ping")
         .arg("-c")
         .arg("1")
@@ -57,19 +57,18 @@ fn main() {
         .unwrap_or_else(|| panic!("uplink module not installed properly"));
 
     let restart = || {
-        Command::new(uplink_module_dir.join("bin").join("daemonize"))
+        let _ = Command::new(uplink_module_dir.join("bin").join("daemonize"))
             .arg(uplink_module_dir.join("service.sh"))
-            .output()
-            .unwrap();
+            .output();
     };
 
     println!("waiting till: {tomorrow_3am}");
-    let mut tics = 0;
+    let mut _tics = 0;
     loop {
         let _ = std::io::stdout().flush();
         let _ = std::io::stderr().flush();
         sleep(Duration::from_secs(1));
-        tics += 1;
+        _tics += 1;
         let now = OffsetDateTime::now_utc();
 
         if now > tomorrow_3am.assume_offset(UtcOffset::UTC) {
@@ -78,18 +77,6 @@ fn main() {
         } else if !uplink_running() {
             println!("{now}: uplink crashed, restarting");
             restart()
-        }
-
-        let ev_time = 5 * 60;
-        if tics % ev_time == ev_time / 2 {
-            if internet_working() {
-                if let Some(mode) = uplink_mode() {
-                    if mode == "slow eventloop".to_string()  {
-                        println!("{now}: uplink stuck in slow eventloop mode, restarting");
-                        restart();
-                    }
-                }
-            }
         }
     }
 }
