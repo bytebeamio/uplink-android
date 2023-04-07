@@ -1,13 +1,14 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::io::Write;
 
+#[derive(Debug)]
 pub struct LazyFile {
     path: String
 }
 
 impl LazyFile {
-    pub fn new(path: &str) -> LazyFile {
-        LazyFile { path: path.to_string() }
+    pub fn new(path: String) -> LazyFile {
+        LazyFile { path }
     }
 
     pub fn exists(&self) -> bool {
@@ -49,5 +50,16 @@ impl LazyFile {
 impl Display for LazyFile {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path)
+    }
+}
+
+pub trait Trace<T> {
+    fn trace(self) -> T;
+}
+
+impl<T: Debug> Trace<T> for T {
+    fn trace(self) -> T {
+        println!("{:?}", self);
+        self
     }
 }

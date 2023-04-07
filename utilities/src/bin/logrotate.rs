@@ -19,7 +19,7 @@ fn end(msg: &str) -> ! {
 
 fn main() {
     let args: Args = Args::parse();
-    let output_file = LazyFile::new(args.output.as_str());
+    let output_file = LazyFile::new(args.output.to_string());
 
     if output_file.exists() && !output_file.is_file() {
         end(format!("{output_file} is not a regular file").as_str());
@@ -38,9 +38,12 @@ fn main() {
         let line = line.unwrap();
 
         output_file.append_line(line.as_str());
-
         if output_file.size() > args.max_size {
-            let last_file = LazyFile::new(format!("{}.{}", args.output, args.backup_files_count).as_str());
+            let last_file = LazyFile::new(if args.backup_files_count == 0 {
+                args.output.to_string()
+            } else {
+                format!("{}.{}", args.output, args.backup_files_count)
+            });
             if last_file.exists() {
                 last_file.delete();
             }
@@ -50,9 +53,9 @@ fn main() {
                         args.output.to_string()
                     } else {
                         format!("{}.{}", args.output, idx-1)
-                    }.as_str()
+                    }
                 );
-                let new_file = LazyFile::new(format!("{}.{}", args.output, idx).as_str());
+                let new_file = LazyFile::new(format!("{}.{}", args.output, idx));
                 if old_file.exists() {
                     std::fs::rename(old_file.name(), new_file.name()).unwrap();
                 }

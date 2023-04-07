@@ -44,11 +44,12 @@ fn _internet_working() -> bool {
 }
 
 fn main() {
-    let tomorrow_3am: PrimitiveDateTime = OffsetDateTime::now_utc()
+    let tomorrow_3am = OffsetDateTime::now_utc()
         .date()
         .next_day().unwrap()
         .with_hms(22, 15, 0)
-        .unwrap();
+        .unwrap()
+        .assume_offset(UtcOffset::UTC);
 
     let current_exe_path = std::env::current_exe().unwrap();
     let uplink_module_dir = current_exe_path
@@ -71,7 +72,7 @@ fn main() {
         _tics += 1;
         let now = OffsetDateTime::now_utc();
 
-        if now > tomorrow_3am.assume_offset(UtcOffset::UTC) {
+        if now > tomorrow_3am {
             println!("{now}: restarting uplink");
             restart()
         } else if !uplink_running() {
