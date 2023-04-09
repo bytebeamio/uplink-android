@@ -9,7 +9,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -99,11 +101,15 @@ public class Uplink {
 
     private void initTask(ConnectionConfig config) {
         try {
-            client = new Socket(config.host, config.port);
+            client = new Socket();
+            client.connect(
+                    new InetSocketAddress(config.host, config.port),
+                    50
+            );
             out = new PrintWriter(client.getOutputStream(), false);
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            new Thread(() -> readerTask(in)).start();
             state.set(UplinkConnectionState.CONNECTED);
+            new Thread(() -> readerTask(in)).start();
         } catch (IOException e) {
             Log.e("UplinkAndroid", "Failed to connect: ", e);
             state.set(UplinkConnectionState.DISCONNECTED);
