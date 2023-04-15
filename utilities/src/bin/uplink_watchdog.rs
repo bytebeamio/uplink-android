@@ -1,12 +1,20 @@
 use std::io::Write;
+use std::ops::Add;
 use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 use regex::Regex;
 use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+use utilities::next_wednesday_3am;
 
 lazy_static::lazy_static! {
     static ref UPLINK_MODE_REGEX: Regex = Regex::new("^.+Switching to (.+) mode!!$").unwrap();
+}
+
+fn current_time() -> OffsetDateTime {
+    OffsetDateTime::now_utc()
+        .to_offset(UtcOffset::current_local_offset()
+            .unwrap_or(UtcOffset::from_hms(5, 30, 0).unwrap()))
 }
 
 fn uplink_running() -> bool {
@@ -44,12 +52,10 @@ fn _internet_working() -> bool {
 }
 
 fn main() {
-    let tomorrow_3am = OffsetDateTime::now_utc()
-        .date()
-        .next_day().unwrap()
-        .with_hms(22, 15, 0)
-        .unwrap()
-        .assume_offset(UtcOffset::UTC);
+    // safe as long as we don't modify environment variables
+    unsafe { time::util::local_offset::set_soundness(time::util::local_offset::Soundness::Unsound); }
+    let now = current_time();
+    let oh_boy_3am = next_wednesday_3am(now);
 
     let current_exe_path = std::env::current_exe().unwrap();
     let uplink_module_dir = current_exe_path
@@ -63,16 +69,16 @@ fn main() {
             .output();
     };
 
-    println!("waiting till: {tomorrow_3am}");
+    println!("{now}: waiting till: {oh_boy_3am}");
     let mut _tics = 0;
     loop {
         let _ = std::io::stdout().flush();
         let _ = std::io::stderr().flush();
         sleep(Duration::from_secs(1));
         _tics += 1;
-        let now = OffsetDateTime::now_utc();
+        let now = current_time();
 
-        if now > tomorrow_3am {
+        if now > oh_boy_3am {
             println!("{now}: restarting uplink");
             restart()
         } else if !uplink_running() {

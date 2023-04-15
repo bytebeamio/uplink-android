@@ -1,5 +1,11 @@
+#![feature(const_option)]
+#![feature(const_result_drop)]
+
 use std::fmt::{Debug, Display, Formatter};
 use std::io::Write;
+use std::ops::Add;
+use std::time::Duration;
+use time::{OffsetDateTime, UtcOffset};
 
 #[derive(Debug)]
 pub struct LazyFile {
@@ -61,5 +67,87 @@ impl<T: Debug> Trace<T> for T {
     fn trace(self) -> T {
         println!("{:?}", self);
         self
+    }
+}
+
+pub fn next_wednesday_3am(anchor: OffsetDateTime) -> OffsetDateTime {
+    let current_weekday = anchor.weekday().number_days_from_sunday();
+    let wednesday_weekday = time::Weekday::Wednesday.number_days_from_sunday();
+    let three_am = time::Time::from_hms(3, 30, 0).unwrap();
+    let before_wednesday_case = current_weekday < wednesday_weekday || (current_weekday == wednesday_weekday && anchor.time() < three_am);
+    // let after_wednesday_case = current_weekday > wednesday_weekday || (current_weekday == wednesday_weekday && anchor.time() >= three_am);
+    if before_wednesday_case {
+        anchor.add(Duration::from_secs(60 * 60 * 24 * ((wednesday_weekday - current_weekday) as u64)))
+            .replace_time(three_am)
+    } else {
+        anchor.add(Duration::from_secs(60 * 60 * 24 * ((7 - (current_weekday - wednesday_weekday)) as u64)))
+            .replace_time(three_am)
+    }
+}
+
+pub const INDIA_OFFSET: UtcOffset = UtcOffset::from_hms(5, 30, 0).ok().unwrap();
+
+mod test {
+    use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
+    use crate::{INDIA_OFFSET, next_wednesday_3am};
+    
+    #[test]
+    fn t2() {
+        dbg!(OffsetDateTime::now_utc().to_offset(Utc))
+    }
+
+    #[test]
+    fn t1() {
+        assert_eq!(
+            next_wednesday_3am(
+                PrimitiveDateTime::new(
+                    Date::from_calendar_date(2023, Month::April, 14).unwrap(),
+                    Time::from_hms(13, 20, 0).unwrap()
+                ).assume_offset(INDIA_OFFSET)
+            ),
+            PrimitiveDateTime::new(
+                Date::from_calendar_date(2023, Month::April, 19).unwrap(),
+                Time::from_hms(3, 30, 0).unwrap()
+            ).assume_offset(INDIA_OFFSET)
+        );
+
+        assert_eq!(
+            next_wednesday_3am(
+                PrimitiveDateTime::new(
+                    Date::from_calendar_date(2023, Month::April, 18).unwrap(),
+                    Time::from_hms(13, 20, 0).unwrap()
+                ).assume_offset(INDIA_OFFSET)
+            ),
+            PrimitiveDateTime::new(
+                Date::from_calendar_date(2023, Month::April, 19).unwrap(),
+                Time::from_hms(3, 30, 0).unwrap()
+            ).assume_offset(INDIA_OFFSET)
+        );
+
+        assert_eq!(
+            next_wednesday_3am(
+                PrimitiveDateTime::new(
+                    Date::from_calendar_date(2023, Month::April, 19).unwrap(),
+                    Time::from_hms(1, 20, 0).unwrap()
+                ).assume_offset(INDIA_OFFSET)
+            ),
+            PrimitiveDateTime::new(
+                Date::from_calendar_date(2023, Month::April, 19).unwrap(),
+                Time::from_hms(3, 30, 0).unwrap()
+            ).assume_offset(INDIA_OFFSET)
+        );
+
+        assert_eq!(
+            next_wednesday_3am(
+                PrimitiveDateTime::new(
+                    Date::from_calendar_date(2023, Month::April, 19).unwrap(),
+                    Time::from_hms(13, 20, 0).unwrap()
+                ).assume_offset(INDIA_OFFSET)
+            ),
+            PrimitiveDateTime::new(
+                Date::from_calendar_date(2023, Month::April, 26).unwrap(),
+                Time::from_hms(3, 30, 0).unwrap()
+            ).assume_offset(INDIA_OFFSET)
+        );
     }
 }
