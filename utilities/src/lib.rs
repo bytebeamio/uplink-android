@@ -87,6 +87,7 @@ pub fn next_wednesday_3am(anchor: OffsetDateTime) -> OffsetDateTime {
 
 pub const INDIA_OFFSET: UtcOffset = UtcOffset::from_hms(5, 30, 0).ok().unwrap();
 
+#[cfg(test)]
 mod test {
     use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
     use crate::{INDIA_OFFSET, next_wednesday_3am};

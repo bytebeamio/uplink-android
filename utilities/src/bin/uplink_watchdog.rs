@@ -1,10 +1,9 @@
 use std::io::Write;
-use std::ops::Add;
 use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 use regex::Regex;
-use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+use time::{OffsetDateTime, UtcOffset};
 use utilities::next_wednesday_3am;
 
 lazy_static::lazy_static! {

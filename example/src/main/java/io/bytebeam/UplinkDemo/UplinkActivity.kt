@@ -29,7 +29,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
             uplink = Uplink(
                 ConnectionConfig()
                     .withHost("127.0.0.1")
-                    .withPort(12110),
+                    .withPort(8031),
                 this
             )
         } catch (e: IOException) {
@@ -38,34 +38,27 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
         }
         Executors.newSingleThreadExecutor().execute {
             var idx = 1
-            var count = 0
-            var last = System.currentTimeMillis()
             while (uplink.connected()) {
                 try {
                     uplink.sendData(
                         UplinkPayload(
-                            "C2C_CAN",
+                            "test_stream_12",
                             idx++,
                             System.currentTimeMillis(),
                             JSONObject().apply {
-                                put("can_id", 204)
-                                put("byte1", 0)
-                                put("byte2", 1)
+                                put("a", idx % 2)
+                                put("b", idx % 3)
+                                put("c", idx % 4)
                             }
-                        )
+                        ).also {
+                            log("Pushing: ${it.payload}")
+                        }
                     )
                 } catch (e: IOException) {
                     log("connection closed, stopping battery status thread")
                     break
                 }
-                val now = System.currentTimeMillis()
-                count++
-                if (now - last > 1000) {
-                    log("$idx: $count messages/s")
-                    last = now
-                    count = 0
-                }
-                Thread.sleep(1)
+                Thread.sleep(1000)
             }
         }
     }
