@@ -20,7 +20,7 @@ The following are the configuration points for this module:
 
 * `$MODULE/etc/uplink.config.toml` : uplink configuration file
 * `$MODULE/services/` : If you want to run some additional services, put the boot script in this directory
-* `/data/local/uplink` : The data directory of uplink. You must create this directory as part of the provisioning of your device and put the uplink `device.json` inside it.
+* `env.sh` : Defines the environment variables for this module. One of those is `DATA_DIR` where all the uplink runtime data lives. By default it points to `/data/local/uplink`
 
 ## Android library
 

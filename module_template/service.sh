@@ -2,10 +2,8 @@
 
 set -x
 
-MODULE_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-DATA_DIR=/data/local/uplink
-export MODULE_DIR
-export DATA_DIR
+export MODULE_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+. $MODULE_DIR/env.sh
 mkdir -p $DATA_DIR
 
 cd $DATA_DIR || exit
