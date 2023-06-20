@@ -1,7 +1,10 @@
 package io.bytebeam.UplinkDemo
 
+import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import io.bytebeam.uplink.ConnectionConfig
@@ -16,31 +19,23 @@ import java.util.concurrent.Executors
 
 class UplinkActivity : AppCompatActivity(), ActionSubscriber {
     val logs = ArrayDeque<String>()
+    val mainThread = Handler(Looper.getMainLooper())
     lateinit var logView: TextView
 
-    lateinit var uplink: Uplink;
+    lateinit var uplinkInterface: UplinkInterface;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_uplink)
 
         logView = findViewById(R.id.logView)
 
-        try {
-            uplink = Uplink(
-                ConnectionConfig()
-                    .withHost("127.0.0.1")
-                    .withPort(8031),
-                this
-            )
-        } catch (e: IOException) {
-            log("uplink refused to connect")
-            return
-        }
+        uplinkInterface = UplinkInterface(this)
+        connectToUplink()
         Executors.newSingleThreadExecutor().execute {
             var idx = 1
-            while (uplink.connected()) {
+            while (true) {
                 try {
-                    uplink.sendData(
+                    uplinkInterface.sendData(
                         UplinkPayload(
                             "test_stream_12",
                             idx++,
@@ -64,7 +59,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
     }
 
     override fun onDestroy() {
-        uplink.dispose()
+        uplinkInterface.dispose()
         super.onDestroy()
     }
 
@@ -74,7 +69,7 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
             for (i in 1..10) {
                 log("sending response: $i")
                 try {
-                    uplink.respondToAction(
+                    uplinkInterface.sendData(
                         ActionResponse(
                             action.action_id,
                             i,
@@ -86,19 +81,19 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
                             },
                             i * 10,
                             arrayOf()
-                        )
+                        ).toPayload()
                     )
                 } catch (e: IOException) {
                     log("connection closed, aborting action responses")
                     break
                 }
-                Thread.sleep(100)
+                Thread.sleep(1000)
             }
         }
     }
 
     private fun log(line: String) {
-        Log.d("UPLINK_EXAMPLE", line)
+        Log.d(TAG, line)
         runOnUiThread {
             logs.addFirst(line)
             if (logs.size > 250) {
@@ -106,5 +101,59 @@ class UplinkActivity : AppCompatActivity(), ActionSubscriber {
             }
             logView.text = logs.joinToString("\n")
         }
+    }
+
+    private fun connectToUplink() {
+        if (!uplinkInterface.connected()) {
+            log("disconnected, trying connection...")
+            if (uplinkInterface.connect(8031)) {
+                log("connected to uplink.")
+            }
+        }
+        mainThread.postDelayed(this::connectToUplink, 1000)
+    }
+}
+
+val TAG = "UplinkActivity"
+
+class UplinkInterface(
+    private val context: UplinkActivity,
+) : ActionSubscriber {
+    private var uplink: Uplink? = null
+
+    fun connect(port: Int): Boolean {
+        if (uplink != null) {
+            dispose()
+        }
+        return try {
+            uplink = Uplink(
+                ConnectionConfig().withHost("localhost").withPort(port), this
+            )
+            true
+        } catch (e: IOException) {
+            false
+        }
+    }
+
+    fun dispose() {
+        Log.e(TAG, "disposing uplink")
+        uplink?.dispose()
+        uplink = null
+    }
+
+    fun sendData(payload: UplinkPayload) {
+        try {
+            uplink?.sendData(payload)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Uplink.sendData error: ", e)
+        }
+    }
+
+    fun connected(): Boolean {
+        return uplink?.connected() == true
+    }
+
+    override fun processAction(action: UplinkAction) {
+        context.processAction(action)
     }
 }
