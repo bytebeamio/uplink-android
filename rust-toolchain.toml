@@ -1,0 +1,9 @@
+[toolchain]
+channel = "1.71"
+targets = [
+    "x86_64-linux-android",
+    "i686-linux-android",
+    "aarch64-linux-android",
+    "armv7-linux-androideabi"
+]
+profile = "minimal"

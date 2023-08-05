@@ -1,6 +1,3 @@
-#![feature(const_option)]
-#![feature(const_result_drop)]
-
 use std::fmt::{Debug, Display, Formatter};
 use std::io::Write;
 use std::ops::Add;
@@ -85,7 +82,9 @@ pub fn next_wednesday_3am(anchor: OffsetDateTime) -> OffsetDateTime {
     }
 }
 
-pub const INDIA_OFFSET: UtcOffset = UtcOffset::from_hms(5, 30, 0).ok().unwrap();
+lazy_static::lazy_static! {
+    pub static ref INDIA_OFFSET: UtcOffset = UtcOffset::from_hms(5, 30, 0).ok().unwrap();
+}
 
 #[cfg(test)]
 mod test {
