@@ -63,7 +63,7 @@ archs.forEach { arch ->
                 )
                 .directory(File("uplink"))
             pb.environment().let {
-                it["ANDROID_NDK_HOME"] = "${it["HOME"]}/Android/Sdk/ndk/25.0.8775105"
+                it["ANDROID_NDK_HOME"] = "${it["HOME"]}/Android/Sdk/ndk/25.2.9519653"
             }
 
             val process = pb.start()
@@ -92,7 +92,7 @@ archs.forEach { arch ->
                 )
                 .directory(root.resolve("utilities").toFile())
             pb.environment().let {
-                it["ANDROID_NDK_HOME"] = "${it["HOME"]}/Android/Sdk/ndk/25.0.8775105"
+                it["ANDROID_NDK_HOME"] = "${it["HOME"]}/Android/Sdk/ndk/25.2.9519653"
             }
 
             val process = pb.start()
