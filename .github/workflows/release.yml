@@ -1,0 +1,28 @@
+name: Build and release uplink-android packages
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-release:
+    name: Build release
+    runs-on: ubuntu-latest
+    container:
+      image: bytebeamio/rust-android
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build with gradle
+        run: JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/ ./gradlew :buildArtifacts
+
+      - name: Upload release archive
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/x86_64-linux-android.tar.gz
+            build/i686-linux-android.tar.gz
+            build/aarch64-linux-android.tar.gz
+            build/armv7-linux-androideabi.tar.gz
+  
