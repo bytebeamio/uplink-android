@@ -13,6 +13,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       - name: Build with gradle
         run: JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/ ./gradlew :buildArtifacts
