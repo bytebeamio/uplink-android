@@ -1,12 +1,12 @@
 processes = []
 action_redirections = { "update_firmware" = "install_update" }
+persistence_path = "/data/local/uplink/persistence"
 
 [tcpapps.app]
 port = 8031
 actions = [{ name = "install_update", timeout = 60 }]
 
 [persistence]
-path = "/data/local/uplink/persistence"
 max_file_size = 100000
 max_file_count = 1000
 
