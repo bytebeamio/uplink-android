@@ -4,7 +4,7 @@ import kotlin.io.path.copyTo
 
 buildscript {
     extra.apply {
-        set("sdk_version", "v0.7.0")
+        set("sdk_version", "v0.7.1")
         set("kotlin_version", "1.7.0")
     }
     repositories {
